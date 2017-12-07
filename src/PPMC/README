@@ -1,0 +1,48 @@
+               +----------------------------------------+
+               | Progressive Polygonal Mesh Compression |
+               |                  PPMC                  |
+               +----------------------------------------+
+
+Adrien Maglo and Clément Courbet
+
+PPMC is the author implementation of the algorithm presented in the article "Progressive Compression of Surface Polygon Meshes". This software is released under the GPL v3 license (see COPYING).
+Please note that this is research code. It is only provided as a proof of concept of the ideas described in the research paper. The quality and the performances of this program can certainly be improved.
+
+1 - Compilation
+
+PPMC compilation has only been tested on Linux. But it should be possible to compile it for other platforms.
+
+The following dependencies are required for the compilation:
+- OpenGL
+- GLUT
+- GLU
+- CGAL
+
+Once you have installed these libraries, go to the PPMC source directory and configure it using cmake:
+$ mkdir bin
+$ cd bin
+$ cmake ..
+
+Then, compile:
+$ make
+
+2 - Execution
+
+Display the usage message to learn how to use PPMC to compress and decompress meshes.
+$ ./ppmc -h
+
+The current version only supports the OFF format.
+
+3 - Contact and support
+
+For any question regarding this software, please contact Adrien Maglo at
+adrien -*AT*- maglo.org .
+
+4 - History
+
+5/4/12 : v0.1 - Initial release.
+
+5 - Acknowledgements
+
+This work was initially supported by the French National Research Agency (ANR) through COSINUS program (project COLLAVIZ n◦ ANR-08-COSI-003).
+

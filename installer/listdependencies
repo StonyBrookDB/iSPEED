@@ -1,0 +1,6 @@
+gcc
+g++
+cmake
+boost
+libspatialindex
+cgal 
