@@ -1,7 +1,7 @@
 Library location requirement:
 All external libraries must be located in the same path on every node of the cluster.
 
-Steps to install HadoopGIS
+Installation steps:
 
 1. Install dependencies listed in `listdependencies`.
 
