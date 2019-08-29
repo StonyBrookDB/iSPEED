@@ -233,7 +233,7 @@ string update_ld_lib_path() {
 	char *appended_ld_path = getenv("HADOOPGIS_LIB_PATH");
 
 	if (!appended_ld_path) {
-		return false; // fail to obtain Hadoop path
+		return 0; // fail to obtain Hadoop path
 	}
 	char *current_ld = getenv("LD_LIBRARY_PATH");
 	if (current_ld) {

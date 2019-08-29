@@ -12,9 +12,9 @@ else
     OPTFLAGS += -O2
 endif
 
-INCFLAGS	= -I $(incbase) -I ./ 
-LIBS		= -lgeos -lspatialindex -lboost_program_options -L $(libbase)
-CGALFLAGS	= -lCGAL -Wl,-rpath,${libbase}
+INCFLAGS	= -I ./ 
+LIBS		= -lgeos -lspatialindex -lboost_program_options -lstdc++ -lgmp -lmpfr
+CGALFLAGS	= -lCGAL -Wl,-rpath
 
 ifdef DEBUG
     OPTFLAGS += -DNDEBUG

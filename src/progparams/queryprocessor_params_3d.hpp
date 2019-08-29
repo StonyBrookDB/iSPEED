@@ -227,11 +227,9 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		tmpss << fr_vars.output_path  << "_mbb";
 	} else if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
 		tmpss << fr_vars.input_path_1 << "/mbb";
-	}
-	else if (fr_vars.query_type.compare(QUERYPROC_NN_VORONOI) == 0) {
+	} else if (fr_vars.query_type.compare(QUERYPROC_NN_VORONOI) == 0) {
 		tmpss << fr_vars.output_path << "_mbb";
-	}
-	else if (fr_vars.query_type.compare(QUERYPROC_NN_RTREE) == 0) {
+	} else if (fr_vars.query_type.compare(QUERYPROC_NN_RTREE) == 0) {
 		tmpss << fr_vars.output_path << "_mbb";
 	}
 	fr_vars.mbb_output = tmpss.str();
