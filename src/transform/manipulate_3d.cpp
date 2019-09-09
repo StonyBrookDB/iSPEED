@@ -60,7 +60,7 @@ bool build_index_tiles(struct query_op &stop, struct query_temp &sttemp,
 }
 
 /* Process standard input and emit objects to their respective partitions */
-bool process_input(struct query_op &stop, struct query_temp &sttemp,
+void process_input(struct query_op &stop, struct query_temp &sttemp,
 		const int join_idx, const int geom_idx, 
 		IStorageManager * &storage, ISpatialIndex * &spidx,
 		std::map<id_type, string> *id_tiles) {

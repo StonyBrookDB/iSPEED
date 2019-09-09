@@ -12,9 +12,6 @@ long total_count = 0;
 
 string prefix_tile_id = "OT";
 
-//function defs
-void process_input();
-bool read_input(struct partition_op & partop);
 // extern void update_partop_info(struct partition_op & partop, 
 //	string uppertileid, string newprefix);
 // extern void cleanup(struct partition_op & partop);
@@ -110,7 +107,6 @@ bool read_input(struct partition_op &partop) {
 	// cleanup(partop);
 	return true;
 }
-
 
 // main method
 int main(int argc, char** argv) {
