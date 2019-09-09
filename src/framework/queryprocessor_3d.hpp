@@ -1,4 +1,5 @@
-
+#ifndef QUERY_PROCESSOR_3D_HPP
+#define QUERY_PROCESSOR_3D_HPP
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -62,7 +63,6 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	string output_path, string original_params, struct framework_vars &fr_vars, 
 	char *cachefilename, char *cachefilefullpath);
  
- 
 
 bool execute_spjoin(struct framework_vars &fr_vars);
 
@@ -78,4 +78,4 @@ bool compress_data(string programpath, vector<string> &input_paths,
 void post_process_stat(char *tmpFile, stringstream &ss);
 #endif
 
-#include <framework/query_spjoin_3d.hpp>
+#endif

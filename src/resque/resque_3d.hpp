@@ -1,4 +1,8 @@
 /* This contains headers (dependencies) of RESQUE spatial processing engine */
+#ifndef RESQUE_3D_HPP
+#define RESQUE_3D_HPP
+
+
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -175,5 +179,5 @@ bool join_with_predicate(
 		const struct mbb_3d * env1, const struct mbb_3d * env2,
 		const int jp);
 
-
+#endif
 

@@ -41,9 +41,8 @@ CXX = g++
 all: queryprocessor_3d  stats_extract_space_dims_3d  manipulate_3d  ppmc  \
 	compress_combine  compress_load  fg_3d ot_3d resque_3d
 
-
-queryprocessor_3d: framework/queryprocessor_3d.cpp
-	$(CXX) -std=c++0x $< $(INCFLAGS) $(LIBS) $(OPTFLAGS) -o ${builddir}/$@
+queryprocessor_3d: framework/queryprocessor_3d.cpp mapreducecpp/mapreduce_cpp.cpp
+	$(CXX) -std=c++0x $< mapreducecpp/mapreduce_cpp.cpp $(INCFLAGS) $(LIBS) $(OPTFLAGS) -o ${builddir}/$@ -Wno-unused-result
 
 stats_extract_space_dims_3d: utilities/stats_extract_space_dims_3d.cpp
 	$(CXX) -std=c++0x $< $(INCFLAGS) $(LIBS) $(OPTFLAGS) -o ${builddir}/$@
