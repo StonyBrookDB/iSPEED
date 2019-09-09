@@ -166,9 +166,14 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp);
 
 //for 3d spatial join
 double get_volume(Nef_polyhedron &inputpoly);
-bool intersects(const mbb_3d * m1, const mbb_3d *m2);
-bool intersects(Polyhedron *P1, Polyhedron *P2);
-
+void get_triangle(Polyhedron P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr);
+bool intersects(Polyhedron *P1, Polyhedron *P2, const struct mbb_3d * env1, const struct mbb_3d * env2);
+int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp);
+bool join_with_predicate(
+		struct query_op &stop, struct query_temp &sttemp,
+		Polyhedron * geom1 , Polyhedron * geom2,
+		const struct mbb_3d * env1, const struct mbb_3d * env2,
+		const int jp);
 
 
 

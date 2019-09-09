@@ -158,7 +158,7 @@ bool extract_mbb(string programpath, vector<string> &input_paths,
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in extracting MBBs: " << status << endl;
@@ -309,7 +309,7 @@ bool extract_skeleton(string programpath, string input_path,
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in extracting Skeletons: " << status << endl;
@@ -413,7 +413,7 @@ bool compress_data(string programpath, vector<string> &input_paths,
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in compressing data: " << status << endl;
@@ -449,7 +449,7 @@ bool build_voronoi(char *input, char *output, struct framework_vars &fr_vars) {
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in building Voronois: " << status << endl;
@@ -543,7 +543,7 @@ bool partition_data(string programpath, string input_path,
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in partitioning " << status << endl;
@@ -556,6 +556,7 @@ bool partition_data(string programpath, string input_path,
 		}
 		return status == 0 ? true : false;
 	}
+	return false;
 }
 
 
@@ -609,7 +610,7 @@ bool collect_stat(string programpath, string input_path, string output_path,
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 			#ifdef DEBUG
 			cerr << "Succeeded in collecting stats MBB: " << status << endl;
@@ -622,6 +623,7 @@ bool collect_stat(string programpath, string input_path, string output_path,
 		}
 		return status == 0 ? true : false;
 	}
+	return false;
 }
 
 bool duplicate_removal(string programpath, string input_path, string output_path, 
@@ -662,7 +664,7 @@ bool duplicate_removal(string programpath, string input_path, string output_path
 
 	int status = 0;
 	pid_t childpid;
-	if (childpid = execute_command(programpath, arr_args)) {
+	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
 #ifdef DEBUG
 			cerr << "Succeeded in boundary handling: " << status << endl;
