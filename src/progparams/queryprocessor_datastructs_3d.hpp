@@ -77,8 +77,8 @@ struct framework_vars {
 	// Input data variables	
 	std::string input_path_1;
 	std::string input_path_2;
-	int shp_idx_1;
-	int shp_idx_2;
+	int shp_idx_1 = 1;
+	int shp_idx_2 = 1;
 	long size_1;
 	long size_2;
 	double obtain_size_1;

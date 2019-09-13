@@ -4,7 +4,7 @@
 
 
 /* 
- * RESQUE processing engine v3.0
+ * RESQUE processing engine v4.0
  *   It supports spatial join and nearest neighbor query with different predicates
  *   1) parseParameters
  *   2) readCacheFile - metadata such as partition schemata
@@ -334,6 +334,10 @@ void report_result(struct query_op &stop, struct query_temp &sttemp,
 
 
 /* Performs a spatial query processing where set 2 is obtained from the cache file */
+/*
+ * Used when the 2nd dataset is relatively tiny/small, so the way the reducer/resque obtains it is via the -file flag from MapReduce
+ *  instead of cin
+ * */
 int execute_query_cache_file(struct query_op &stop, struct query_temp &sttemp) {
 	int num_obj_file;
 	int count = 0; // Returns the number
@@ -598,6 +602,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	//use the same key to locate the segment.
 	size_t maxoffset2 = stop.shm_max_size;
 	//std::cerr << "max offset" << maxoffset2 << std::endl;
+	// Getting access to shared memory with all compressed objects stored in there
 	if ((shmid = shmget(COMPRESSION_KEY, maxoffset2, 0666)) < 0) {
 		perror("shmget");
 		exit(1);
@@ -620,6 +625,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	//std::cerr << "decomp_buffer" << (long) decomp_buffer << TAB << BUFFER_SIZE << std::endl;
 	//std::cerr << "decomp_buffer" << (long) resque_decomp_buffer << TAB << BUFFER_SIZE << std::endl;
 	
+	// Read line by line inputs
 	while (std::cin && getline(std::cin, input_line) && !std::cin.eof()) {
 		tokenize(input_line, fields, TAB, true);
 	
@@ -700,6 +706,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 			#endif
 
 			sttemp.tile_id = previd;
+			// Process the current tile in memory
 			int pairs = join_bucket(stop, sttemp); // number of satisfied predicates
 
 			#ifdef DEBUGTIME
@@ -908,7 +915,6 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
 			LeafCapacity,
 			3, 
 			SpatialIndex::RTree::RV_RSTAR, indexIdentifier);
-
 	// Error checking 
 	return spidx->isIndexValid();
 }
@@ -921,6 +927,8 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
  */
 int join_bucket(struct query_op &stop, struct query_temp &sttemp)
 {	
+	// return join_bucket_voronoi
+	// return join_bucket_knn
 	return join_bucket_spjoin(stop, sttemp);
 }
 
@@ -1242,6 +1250,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			MyVisitor vis;
 			vis.matches.clear();
 			/* R-tree intersection check */
+			std::cerr<<"terry is good 1"<<std::endl;
 			spidx->intersectsWithQuery(r, vis);
 
 
@@ -1255,14 +1264,15 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			std::cerr << "********************************************" << std::endl;
 			#endif*/
 
+			// This is where iSPEED difference from Hadoopgis starts:
+			std::cerr<<"terry is good 1.5"<<std::endl;
 
-
-	//if(0){
 			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i], sttemp.lengthdata[idx1][i],
 					stop.decomp_lod, stop, sttemp, 0);
+			std::cerr<<"terry is good 2"<<std::endl;
 
-			for (uint32_t j = 0; j < vis.matches.size(); j++)
-			{
+			for (uint32_t j = 0; j < vis.matches.size(); j++){
+				std::cerr<<"terry is good 3"<<std::endl;
 
 				/* Skip results that have been seen before (self-join case) */
 				/*
@@ -1318,16 +1328,11 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 			}
 			delete geom1;
-//}
+			std::cerr<<"terry is good 4"<<std::endl;
+
 		}
 		//shmdt(shm);  // detach shared memory segment
-
-
-
-	} // end of try
-
-	catch (Tools::Exception& e) {
-	//catch (...) {
+	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;
 		#ifdef DEBUG
 		std::cerr << e.what() << std::endl;
@@ -1469,6 +1474,7 @@ bool join_with_predicate(
 			sttemp.volume2 = get_volume(N2);
 		}
 
+		// Slow because of this
 		if (stop.needs_intersect_volume) {
 			if((*geom1).is_closed() && (*geom2).is_closed()) {
 		//	if(p1.is_closed() && p2.is_closed()){

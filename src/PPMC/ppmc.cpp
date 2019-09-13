@@ -55,44 +55,53 @@ int main(int argc, char** argv) {
 		usage();
 		return -1;
 	}
-
 	char* stdin_file_name = NULL; // name of the input file
 	int join_idx = -1; // index of the current file (0 or 1) matching to dataset 1 or 2
-	int geom_idx = -1; // geometry field index
-
-	//std::cout.precision(20);
 
 	char* mapper_id = getenv("mapreduce_task_id");
 
 	stdin_file_name = getenv("mapreduce_map_input_file");
 
-	//std::cout << stdin_file_name << std::endl;
 
+	/* This happens if program is not run in mapreduce
+	 *  For testing locally, set/export the environment variable above */
 	if (!stdin_file_name) {
-		/* This happens if program is not run in mapreduce
-		 *  For testing locally, set/export the environment variable above */
 		#ifdef DEBUG
 		std::cerr << "Environment variable mapreduce_map_input_file is not set correctly." << std::endl;
 		#endif
 		return -1;
 	}
-
-	std::string input_line;
-	/*while (cin && getline(cin, input_line) && !cin.eof()) {
+	if(!mapper_id){
+		#ifdef DEBUG
+		std::cerr << "Environment variable mapreduce_task_id is not set correctly." << std::endl;
+		#endif
+		return -1;
+	}
+#ifdef DEBUG
+	std::cerr <<"stdin file name: "<< stdin_file_name<<"\nmapper_id:" <<mapper_id<< std::endl;
+#endif
+	/*
+	 * 	std::string input_line;
+	 *
+	 * while (cin && getline(cin, input_line) && !cin.eof()) {
     		std::cout << "MBB" << TAB << stdin_file_name << TAB << mapper_id << std::endl;
 	}
 	return 0;
 	*/
 
-	if (strstr(stdin_file_name, stop.prefix_1) != NULL) {
-		join_idx = SID_1;
-		geom_idx = stop.shape_idx_1;
-	} else if (strstr(stdin_file_name, stop.prefix_2) != NULL) {
+//	if (stop.prefix_1!=NULL && strstr(stdin_file_name, stop.prefix_1) != NULL) {
+//		join_idx = SID_1;
+//	} else if (stop.prefix_2!=NULL && strstr(stdin_file_name, stop.prefix_2) != NULL) {
+//		join_idx = SID_2;
+//	} else {
+//		std::cerr << "File name from environment variable "<<stdin_file_name<<" does not match any path prefix" << std::endl;
+//		return -1;
+//	}
+
+	if (stop.prefix_2!=NULL && strstr(stdin_file_name, stop.prefix_2) != NULL) {
 		join_idx = SID_2;
-		geom_idx = stop.shape_idx_2;
 	} else {
-		std::cerr << "File name from environment variable \
-			does not match any path prefix" << std::endl;
+		join_idx = SID_1;
 	}
 
 	if (join_idx < 0) {
@@ -113,7 +122,7 @@ int main(int argc, char** argv) {
 			
 	//std::string output_path = "/scratch/hadoopgis3d/mrbin/compressionoutput" + mapperidstr;  
 
-	if (!compress_data(stdin_file_name, output_path.str(), mapper_id, join_idx)) {
+	if (!compress_data(output_path.str(), mapper_id, join_idx)) {
 		std::cerr << "Error reading input in" << std::endl;
 		return -1;
 	}
@@ -125,8 +134,9 @@ int main(int argc, char** argv) {
 }
 
 
-bool compress_data(char* stdin_file_name, std::string output_path, char* mapper_id, long join_id)
+bool compress_data( std::string output_path, char* mapper_id, long join_id)
 {
+
 	long count_objects = -1;
 	long obj_id = 0;
 	std::string input_line; // Temporary line
@@ -174,7 +184,6 @@ bool compress_data(char* stdin_file_name, std::string output_path, char* mapper_
 			input_line = input_line.substr(0, input_line.size() - 1);
 		}
 		tokenize(input_line, fields, TAB, true);
-
 		std::stringstream buffer(fields[0]);
 		buffer >> obj_id;
 		//obj_id = stod(fields[0]);
@@ -277,11 +286,12 @@ bool compress_data(char* stdin_file_name, std::string output_path, char* mapper_
 	std::cout << "SPACE" << TAB << "T" << TAB << space_low[0] << TAB << space_low[1] << TAB << space_low[2] 
 			<< TAB << space_high[0]	<< TAB << space_high[1]	<< TAB << space_high[2] << TAB << count_objects << std::endl;
 	
+
+	// write the mbb
 	const char *cstr = output_path.c_str();
 	std::ofstream myFile (cstr, std::ios::out | std::ios::binary);
 	//ofstream myFile (output_path, ios::out | ios::binary);
 
-	
 	// Writing in chunks
 	int amt = 67108864;
 	long wridx = 0;
@@ -292,17 +302,16 @@ bool compress_data(char* stdin_file_name, std::string output_path, char* mapper_
 	if (offset > 0 && wridx < offset) {
 		myFile.write( (buffer + wridx), offset % amt);
 	}
-	
-	// Old code: 
-	// myFile.write(buffer, offset);
 	myFile.close();
 
 	delete[] buffer;
-        delete[] meshbuffer;
+    delete[] meshbuffer;
+
 	#ifdef DEBUG
 	std::cerr << offset << std::endl; // the total size
+    std::cerr << "size of types: " << sizeof(uint2) << TAB << sizeof(uint4) << TAB << sizeof(uint) << std::endl;
 	#endif
-        std::cerr << "size of types: " << sizeof(uint2) << TAB << sizeof(uint4) << TAB << sizeof(uint) << std::endl;
+
 	return true;
 
 }

@@ -391,7 +391,6 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	optimal = a; // 5M for the skeleton program 
 	//arr_args.push_back(ss.str());
 	*/
-
 	arr_args.push_back("-numReduceTasks");
 	arr_args.push_back("0");
 	/*
@@ -400,8 +399,6 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	arr_args.push_back(ss.str());
 	*/
 	//arr_args.push_back("-jobconf");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
 
 #ifdef DEBUG
 	cerr << "Compress data program params: " << endl;
@@ -733,6 +730,8 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	arr_args.push_back("-output");
 	arr_args.push_back(output_path);
 
+	// MANIPULATE is also used in MBB extraction
+	//
 	arr_args.push_back("-file");
 	arr_args.push_back(fr_vars.hadoopgis_prefix + MANIPULATE);
 	arr_args.push_back("-file");
@@ -761,8 +760,6 @@ bool sp_join(string programpath, vector<string> &input_paths,
 
 	arr_args.push_back("-jobconf");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
 
 #ifdef DEBUG
 	cerr << "Executing spjoin program params: ";
@@ -791,10 +788,10 @@ bool sp_join(string programpath, vector<string> &input_paths,
 }
 
 
-
 bool execute_spjoin(struct framework_vars &fr_vars) {
 	// First check if dataset 1 has been loaded or not
-
+	// Find the size of datasets 1 and 2
+	//   in order to compute partitioning parameter (bucket size)
 	// loaded_1 = hdfs_check_data(hadoopcmdpath, input_path_1 + "/" + PARTITION_FILE_NAME);
 	fr_vars.obtain_size_1 = hdfs_get_size(fr_vars.hadoopcmdpath, fr_vars.input_path_1);
 	if (fr_vars.obtain_size_1 >= 0) {
@@ -828,9 +825,8 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		inputpaths.push_back(fr_vars.input_path_2);
 	}
 	// compress the input data
-	// Extract object MBB and grab space dimension
-	#ifdef COMPRESSED
-
+	// -- Extract object MBB and grab space dimension
+	//  -- and compress data at the same time ([Hoang] thinks)
 	cerr << "# of input paths: " << inputpaths.size() << TAB << fr_vars.join_cardinality << endl;
 	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.mbb_output)) {
 		#ifdef DEBUG
@@ -843,23 +839,11 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		}
 	}
 
-	#else
-
-	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.mbb_output)) {
-		#ifdef DEBUG
-		cerr << "\n\nExtracting MBBs\n" << endl;
-		#endif
-		if (!extract_mbb(fr_vars.hadoopcmdpath, inputpaths,
-			fr_vars.mbb_output, fr_vars.sharedparams, fr_vars)) {
-			cerr << "Failed extracting MBB"  << endl;
-			exit(1);
-		}
-	}
-
-	#endif
-
-	char *tmpFile = mktemp(nametemplate); // this should only contain 1 line and will
-	int tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
+	//// Retrieve the total space dimension
+	int tmpfd = mkstemp(nametemplate);
+	char *tmpFile = nametemplate;
+	close(tmpfd);
+	tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
 	char *tmpnameonly = strrchr(tmpFile, '/'); // pointing to just the name of the cache file
 	tmpnameonly++; // Advance the pointer past the slash delimiter character
 #ifdef DEBUG
@@ -867,45 +851,28 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 #endif
 
 	// Create another file where you will write the content of all SPACE info paths into
-
+	// Getting min_x, min_y, min_z, max_z, max_y, max_z
 	// Obtain the cache file from hdfs
 	bool res_cat = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.space_path, tmpfd);
 	close(tmpfd);
 
-	#ifdef COMPRESSED
-		read_space(tmpFile, fr_vars);
-		#ifdef DEBUG
-		cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB
-		<< fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
-		<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1]
-		<< TAB << fr_vars.spinfo.space_high[2] << endl;
-		cerr << "Number objects: " << fr_vars.spinfo.num_objects << endl;
-		#endif
-		std::ofstream ofs;
-  		ofs.open (tmpFile, std::ofstream::out | std::ofstream::trunc);
-  		ofs << "T" << TAB << fr_vars.spinfo.space_low[0] << TAB << fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2]
-		 << TAB	<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1] << TAB << fr_vars.spinfo.space_high[2]
-			<< TAB << fr_vars.spinfo.num_objects << endl;
-  		ofs.close();
-	#else
-
-		#ifdef DEBUG
-		ifstream instr(tmpFile);
-		string dummystr;
-		if (instr.is_open()) {
-			instr >> dummystr
-				>> fr_vars.spinfo.space_low[0] >> fr_vars.spinfo.space_low[1] >> fr_vars.spinfo.space_low[2]
-				>> fr_vars.spinfo.space_high[0] >> fr_vars.spinfo.space_high[1] >> fr_vars.spinfo.space_high[2]
-				>> fr_vars.spinfo.num_objects;
-			instr.close();
-		}
-		cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB
-			<< fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
-			<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1]
-			<< TAB << fr_vars.spinfo.space_high[2] << endl;
-		cerr << "Number objects: " << fr_vars.spinfo.num_objects << endl;
-		#endif
+	read_space(tmpFile, fr_vars);
+	#ifdef DEBUG
+	cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB
+	<< fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
+	<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1]
+	<< TAB << fr_vars.spinfo.space_high[2] << endl;
+	cerr << "Number objects: " << fr_vars.spinfo.num_objects << endl;
 	#endif
+	std::ofstream ofs;
+	ofs.open (tmpFile, std::ofstream::out | std::ofstream::trunc);
+	ofs << "T" << TAB << fr_vars.spinfo.space_low[0] << TAB << fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2]
+	 << TAB	<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1] << TAB << fr_vars.spinfo.space_high[2]
+		<< TAB << fr_vars.spinfo.num_objects << endl;
+	ofs.close();
+
+	// Saving those info into a struct that gets passed along query parameters into sequential steps
+
 
 	if (fr_vars.comp_mode) {
 		// stop the program
@@ -915,6 +882,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 
 	// Run combiner on primary node and then loaders on all nodes
 	//
+	// runcombiner.sh kind of belongs here
 	//
 	//
 	//
@@ -934,13 +902,10 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	//
 	//
 	//
-	//
-	//
-	#ifdef COMPRESSED
+	// Dejun:
 	string allmbbspath = fr_vars.output_path + "_inputresque";
 	vector<string> inputresque;
 	inputresque.push_back(allmbbspath);
-	#endif
 
 	cerr << "Start partitioning" << endl;
 
@@ -967,10 +932,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 			#ifdef DEBUG
 			cerr << "\n\nPartitioning 1st steps\n" << endl;
 			#endif
-
-
-			#ifdef COMPRESSED
-
+			// MapReduce partitioning happens here
 			if (!partition_data(fr_vars.hadoopcmdpath, allmbbspath,
 						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.bucket_size,
 						fr_vars.sharedparams, 1, fr_vars.sampling_rate, fr_vars, tmpnameonly, tmpFile)) {
@@ -979,17 +941,6 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 				remove(tmpFile);
 				exit(1);
 			}
-
-			#else
-			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
-						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.bucket_size,
-						fr_vars.sharedparams, 1, fr_vars.sampling_rate, fr_vars, tmpnameonly, tmpFile)) {
-				cerr << "Failed partitioning 1st step" << endl;
-				// Remove cache file
-				remove(tmpFile);
-				exit(1);
-			}
-			#endif
 		}
 	} else {
 		if (fr_vars.rough_bucket_size == -1) {
@@ -1004,9 +955,9 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		}
 		cerr << "Rough bucket size: " << fr_vars.rough_bucket_size << endl;
 		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
-#ifdef DEBUG
+			#ifdef DEBUG
 			cerr << "\n\nPartitioning 1st step\n" << endl;
-#endif
+			#endif
 			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
 						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.rough_bucket_size,
 						fr_vars.sharedparams, 1, fr_vars.sampling_rate, fr_vars, tmpnameonly, tmpFile)) {
@@ -1022,15 +973,15 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	bool res_partition = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout, tmpfd);
 	close(tmpfd);
 
-#ifdef DEBU
+#ifdef DEBUG
 	cerr << "Temp file name to hold partition boundary: " << tmpFile << endl;
 #endif
 
 	if (fr_vars.para_partition) {
 		// Second round of partitioning
-#ifdef DEBUG
+		#ifdef DEBUG
 		cerr << "\n\nPartitioning 2nd steps\n" << endl;
-#endif
+		#endif
 		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath2)) {
 			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
 						fr_vars.partitionpath2, fr_vars.partition_method_2, fr_vars.bucket_size,
@@ -1082,8 +1033,9 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 
 
 
-
-	#ifdef COMPRESSED
+	// Most important-heavy-lifting work here
+	// inputresque: is the list of all objects MBBs with offset and length of the level 0 compression
+	//  e.g. 1203 231 242341 12424 12441 42414 0 200 (starts at 0 byte and 200 bytes)
 	// Spatial join step
 	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.joinoutputpath)) {
 		#ifdef DEBUG
@@ -1101,24 +1053,6 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		}
 	}
 	cerr << "Done with spatial join." << endl;
-
-	#else
-	// Spatial join step
-	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.joinoutputpath)) {
-		#ifdef DEBUG
-		cerr << "\n\nExecuting spatial joins\n" << endl;
-		#endif
-		if (!sp_join(fr_vars.hadoopcmdpath, inputpaths,
-					fr_vars.joinoutputpath, fr_vars.sharedparams, fr_vars,
-					tmpnameonly, tmpFile)) {
-			cerr << "Failed spatial join" << endl;
-			// Remove cache file
-			remove(tmpFile);
-			exit(1);
-		}
-	}
-	cerr << "Done with spatial join." << endl;
-	#endif
 
 	// Perform duplicate removal
 

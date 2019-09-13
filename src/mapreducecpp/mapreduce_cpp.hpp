@@ -16,7 +16,7 @@ struct framework_vars;
 // MapReduce constants
 const string JAR_FILE_NAME = "hadoop-streaming.jar";
 // relative path with respect to the lib path
-const string CUSTOM_JAR_REL_PATH = "../../build/libjar/myCustomLibs.jar"; 
+const string CUSTOM_JAR_REL_PATH = "/myCustomLibs.jar";
 const string PARTITION_FILE_NAME = "partfile.idx";
 
 

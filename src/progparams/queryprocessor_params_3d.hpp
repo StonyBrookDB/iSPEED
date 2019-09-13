@@ -21,6 +21,7 @@ void init_params(struct framework_vars &fr_vars) {
 
 bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
 	fr_vars.join_cardinality = 1;
+	string binpath;
 	try {
 		po::options_description desc("Options");
 		desc.add_options()
@@ -58,6 +59,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 			("compression", "Runs the code till the step before partitioning")
 			("spatialproc", "Runs the code from partitioning till the end of spatial processing")
 			("decomplod", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
+			("binpath",po::value<string>(&binpath), "path to the binary executables")
 			;
 		po::variables_map vm;        
 		po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -80,6 +82,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 			cerr << desc << endl;
 			return 0;
 		}
+
 
 
 		// Remove trailing slash in path
@@ -165,7 +168,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		fr_vars.hadoopcmdpath = getHadoopCmdPath();
 		fr_vars.hdfscmdpath = getHdfsCmdPath();
 		fr_vars.streaming_path = getHadoopJarPath();
-		fr_vars.hadoopgis_prefix = getenv("HADOOPGIS_BIN_PATH") + SLASH;
+		fr_vars.hadoopgis_prefix = binpath + SLASH;
 		#ifdef DEBUG
 		cerr << "Hadoop commands path:" << fr_vars.hadoopcmdpath  << endl;
 		#endif

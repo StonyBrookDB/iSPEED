@@ -36,4 +36,4 @@
 
 void init(struct query_op &stop, struct query_temp &sttemp);
 
-bool compress_data(char* stdin_file_name, std::string output_path, char* mapper_id, long join_id);
+bool compress_data(std::string output_path, char* mapper_id, long join_id);

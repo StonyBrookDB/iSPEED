@@ -512,7 +512,7 @@ bool extract_params(int argc, char** argv, struct query_op &stop, struct query_t
 		#endif
 		return false; 
 	}
-	
+
 	if ((stop.join_predicate == ST_NEAREST || stop.join_predicate == ST_NEAREST_2)
 		 && stop.k_neighbors <= 0) {
 		#ifdef DEBUG 

@@ -5,20 +5,15 @@ incbase=${HADOOPGIS_INC_PATH}
 
 builddir=../build/bin
 
-
-ifdef VALGRINDCHECK
-    OPTFLAGS	+= -O0 -g -W #for memory leak checking
+ifdef VALGRINDDEBUG
+    OPTFLAGS += -O0 -g -DDEBUG#for memory leak checking
 else
-    OPTFLAGS += -O2
+    OPTFLAGS += -O2 
 endif
 
 INCFLAGS	= -I ./ 
 LIBS		= -lgeos -lspatialindex -lboost_program_options -lstdc++ -lgmp -lmpfr
 CGALFLAGS	= -lCGAL -Wl,-rpath
-
-ifdef DEBUG
-    OPTFLAGS += -DNDEBUG
-endif
 
 
 ifdef NOTCOMPRESSED
@@ -51,7 +46,7 @@ manipulate_3d: transform/manipulate_3d.cpp
 	$(CXX)  -frounding-math -std=c++0x  -DCGAL_EIGEN3_ENABLED $< $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(OPTFLAGS) -o ${builddir}/$@
 
 ppmc: PPMC/ppmc.cpp
-	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math -O3 $< $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(OPTFLAGS) -o ${builddir}/$@
+	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math  $< $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(OPTFLAGS) -o ${builddir}/$@
 
 compress_combine: PPMC/compress_combine.cpp
 	$(CXX) -std=c++0x $< $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(OPTFLAGS) -o ${builddir}/$@
@@ -65,7 +60,8 @@ skeleton_3d: indices/skeleton_3d.cpp
 voronoi_3d: indices/voronoi_3d.cpp
 	$(CXX) -std=c++0x $< $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(OPTFLAGS) -o ${builddir}/$@
 
-
+sampler: transform/sampler.cpp
+	$(CXX) -std=c++0x $< $(INCFLAGS) $(OPTFLAGS) -o ${builddir}/$@
 
 fg_3d: partitionalgo/fg/fg_3d.cpp
 	$(CXX) -std=c++0x $< $(INCFLAGS) $(LIBS) $(OPTFLAGS) -o ${builddir}/$@

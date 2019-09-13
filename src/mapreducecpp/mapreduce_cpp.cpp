@@ -176,9 +176,10 @@ pid_t execute_command2(string programpath, vector<string> &strargs) {
 
 
 // Return the absolute path to where the streaming jar is located
+//todo update the streaming jar path according to different hadoop versions
 string getHadoopJarPath() {
 	stringstream ss;
-	ss <<  getenv("HADOOP_STREAMING_PATH") << SLASH << JAR_FILE_NAME;
+	ss <<  getenv("HADOOP_HOME") << "/share/hadoop/tools/lib/hadoop-streaming-3.1.2.jar";
 	return ss.str();
 }
 
@@ -210,7 +211,7 @@ string update_ld_lib_path() {
 	char *appended_ld_path = getenv("HADOOPGIS_LIB_PATH");
 
 	if (!appended_ld_path) {
-		return 0; // fail to obtain Hadoop path
+		return "."; // fail to obtain Hadoop path
 	}
 	char *current_ld = getenv("LD_LIBRARY_PATH");
 	if (current_ld) {
@@ -222,10 +223,7 @@ string update_ld_lib_path() {
 		ld_path = appended_ld_path;
 	}
 	setenv("LD_LIBRARY_PATH", ld_path, 1);
-	stringstream ss;
-	//ss << "LD_LIBRARY_PATH=" << ld_path;
-	ss << "LD_LIBRARY_PATH=/home/yliang/Projects/hadoopgis/built/lib";
-	return ss.str();
+	return ld_path;
 }
 
 /* Obtain the first string returned by the command */
