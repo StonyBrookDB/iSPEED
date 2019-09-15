@@ -1,4 +1,3 @@
-#include "mymesh.h"
 
 #include <iostream>
 #include <fstream>
@@ -10,24 +9,24 @@
 #include <time.h>
 #include <float.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#include <GL/glut.h>
-#include <CGAL/Timer.h>
-#include "configuration.h"
 
 #include <vector>
 #include <istream>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
+#include <GL/glut.h>
+#include <CGAL/Timer.h>
+
+/// RESQUE related
 #include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
@@ -38,6 +37,15 @@
 #include <progparams/resque_params_3d.hpp>
 
 
+
+
+
+
+#include "PPMC/mymesh.h"
+#include "PPMC/configuration.h"
+#define SHMSZ     10000000000
+
+
 void init(struct query_op &stop, struct query_temp &sttemp);
 
-bool compress_data(char* stdin_file_name, string output_path,  long mapper_id, long join_id);
+bool compress_data(std::string output_path, char* mapper_id, long join_id);

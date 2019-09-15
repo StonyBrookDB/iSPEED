@@ -48,6 +48,7 @@
 #include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
+//#include <extensions/rtree3d/rtree_traversal_3d.h>
 
 // Constants
 #include <progparams/resque_constants_3d.h>

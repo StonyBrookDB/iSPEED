@@ -17,11 +17,11 @@
 * along with PPMC.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-//#include "PPMC/mymesh.h"
-//#include "PPMC/configuration.h"
-//#include "PPMC/frenetRotation.h"
-//#include <unistd.h>
-//#include <algorithm>
+#include "PPMC/mymesh.h"
+#include "PPMC/configuration.h"
+#include "PPMC/frenetRotation.h"
+
+#include <algorithm>
 
 
 MyMesh::MyMesh(char filename[], 
@@ -66,7 +66,7 @@ MyMesh::MyMesh(char filename[],
        p_data[i] = 0;
    }
 
-    // Initialise the range coder structure.
+    // Initialize the range coder structure.
     rangeCoder.p_data = p_data;
     rangeCoder.p_dataOffset = &dataOffset;
 

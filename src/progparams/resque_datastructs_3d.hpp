@@ -183,7 +183,7 @@ struct query_temp {
 	//std::map<int, std::vector<Polyhedron *> > polydata;
 	std::map<int, std::vector<CGAL::Polyhedron_3<CGAL::Exact_predicates_exact_constructions_kernel> *> > polydata;
 	
-	// for comprssed data
+	// for compressed data
 	std::map<int, std::vector<long> > offsetdata;
 	std::map<int, std::vector<long> > lengthdata;
 	std::istringstream poly_str[2]; // 0 for data set 1, 1 for data set 2

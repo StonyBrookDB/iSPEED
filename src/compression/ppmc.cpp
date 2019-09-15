@@ -16,7 +16,7 @@
 * You should have received a copy of the GNU General Public License
 * along with PPMC.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
-#include <PPMC/ppmc.h>
+#include <compression/ppmc.h>
 #include <unistd.h>
 using namespace CGAL;
 

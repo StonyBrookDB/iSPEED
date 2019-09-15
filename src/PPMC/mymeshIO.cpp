@@ -17,13 +17,13 @@
 * along with PPMC.  If not, see <http://www.gnu.org/licenses/>.
 *****************************************************************************/
 
-//#include <fstream>
+#include <fstream>
 
-//#include "mymesh.h"
-//#include "mymeshBaseBuilder.h"
-//#include "configuration.h"
+#include "mymesh.h"
+#include "mymeshBaseBuilder.h"
+#include "configuration.h"
 
-// #include <unistd.h>
+#include <unistd.h>
 /**
   * Write the compressed data to the buffer.
   */

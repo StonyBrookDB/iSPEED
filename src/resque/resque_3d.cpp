@@ -1,7 +1,7 @@
 
 #include <resque/resque_3d.hpp>
 
-
+using namespace std;
 
 /* 
  * RESQUE processing engine v4.0
@@ -139,116 +139,6 @@ Sc_Polyhedron* sc_extract_geometry(long offset, long length, unsigned i_decompPe
 
 	//delete[] fbuffer;
 	std::cerr << "constructing sk poly" << std::endl;
-	//std::cerr << "geom: " << *geom << std::endl;
-	delete currentMesh;
-	return geom;
-}
-/*
-  Extract one polyhedron geometry from compressed data with given offset and length
-*/
-Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-	Polyhedron* geom;
-	/*
-	// moved to global vars
-	int shmid;
-    	key_t key;
-    	char *shm, *s;
-	*/
-	/*
-	int shmid;
-	//use the same key to locate the segment.
-	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
-		perror("shmget");
-		exit(1);
-	}
-	    
-	// Now we attach the segment to our data space.
-	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
-		perror("shmat");
-		exit(1);
-	}
-	*/
-	// Initialize parameters
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-
-	#ifdef DEBUG
-	std::cout << "attempting to extract " << offset << TAB << length << std::endl;
-	#endif
-
-	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
-	bool b_allowConcaveFaces = true;
-	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
-	
-	// Init the random number generator.
-	srand(4212);
-	//std::cerr << "got to this part 1" << std::endl;
-	//read the mesh:
-
-	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
-
-	/*
-	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
-	file.seekg(0, std::ios::beg);
-
-	char * fbuffer = new char[2000000];
-        file.read(fbuffer,length);
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", fbuffer[i]);
-	}
-	printf("\n");
-	*/
-	/*
-	printf("resque shared buffer: ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", resque_decomp_buffer[i]);
-	}
-	printf("\n");
-	printf("shm current at offset  ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
-	}
-	printf("\n");
-	*/
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname, 
-				i_decompPercentage,
-		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-		             b_useLiftingScheme, b_useCurvaturePrediction,
-		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, 
-				dummyoutputname, 
-				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-				// fbuffer, length, resque_decomp_buffer);
-		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
-	
-	currentMesh->completeOperation();
-	
-	// debug
-
-	//std::cerr << "current mesh: " << *currentMesh << std::endl;
-	std::stringstream os;
-	os << *currentMesh;
-	//os.clear();
-	
-	//std::cerr << "done decomp" << std::endl;
-	geom = new Polyhedron();
-	os >> *geom;
-	//std::cerr << "os: " << os.str() << std::endl;
-	
-	// only when volume is needed
-	//if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	//}
-
-	//delete[] fbuffer;
-	//std::cerr << "constructing poly" << std::endl;
 	//std::cerr << "geom: " << *geom << std::endl;
 	delete currentMesh;
 	return geom;
@@ -1141,6 +1031,126 @@ double get_volume(Nef_polyhedron &inputpoly) {
 	return total_volume;
 }
 
+/*
+  Extract one polyhedron geometry from compressed data with given offset and length
+*/
+Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
+	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
+	cerr<<"terry is good 3.5"<<endl;
+	Polyhedron* geom;
+	/*
+	// moved to global vars
+	int shmid;
+    	key_t key;
+    	char *shm, *s;
+	*/
+	/*
+	int shmid;
+	//use the same key to locate the segment.
+	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
+		perror("shmget");
+		exit(1);
+	}
+
+	// Now we attach the segment to our data space.
+	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
+		perror("shmat");
+		exit(1);
+	}
+	*/
+	// Initialize parameters
+	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
+
+	#ifdef DEBUG
+	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
+	#endif
+
+	// Codec features status.
+	bool b_useAdaptiveQuantization = false;
+	bool b_useLiftingScheme = true;
+	bool b_useCurvaturePrediction = true;
+	bool b_useConnectivityPredictionFaces = true;
+	bool b_useConnectivityPredictionEdges = true;
+	bool b_allowConcaveFaces = true;
+	bool b_useTriangleMeshConnectivityPredictionFaces = true;
+	unsigned i_quantBit = 12;
+	//unsigned i_decompPercentage = 100;
+
+	// Init the random number generator.
+	srand(4212);
+	//std::cerr << "got to this part 1" << std::endl;
+	//read the mesh:
+
+	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
+
+	/*
+	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
+	file.seekg(0, std::ios::beg);
+
+	char * fbuffer = new char[2000000];
+        file.read(fbuffer,length);
+    	for (size_t i = 0; i < length; ++i) {
+		printf("%02X ", fbuffer[i]);
+	}
+	printf("\n");
+	*/
+	/*
+	printf("resque shared buffer: ");
+    	for (size_t i = 0; i < length; ++i) {
+		printf("%02X ", resque_decomp_buffer[i]);
+	}
+	printf("\n");
+	printf("shm current at offset  ");
+    	for (size_t i = 0; i < length; ++i) {
+		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
+	}
+	printf("\n");
+	*/
+	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
+				i_decompPercentage,
+		             i_mode, i_quantBit, b_useAdaptiveQuantization,
+		             b_useLiftingScheme, b_useCurvaturePrediction,
+		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+				dummyoutputname,
+				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
+				// fbuffer, length, resque_decomp_buffer);
+		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
+	assert(currentMesh!=NULL);
+	cerr<<"terry is good 3.7"<<endl;
+	if(currentMesh!=NULL){
+		currentMesh->completeOperation();
+	}
+	cerr<<"terry is good 3.71"<<endl;
+
+	// debug
+
+	std::cerr << "current mesh: " << *currentMesh << std::endl;
+	std::stringstream os;
+	os << *currentMesh;
+	//os.clear();
+
+	std::cerr << "done decomp" << std::endl;
+	geom = new Polyhedron();
+	os >> *geom;
+	std::cerr << "os: " << os.str() << std::endl;
+	cerr<<"terry is good 3.8"<<endl;
+
+	// only when volume is needed
+	//if (stop.needs_intersect_volume) {
+		sttemp.poly_str[dataset_id].str(os.str());
+	//}
+		cerr<<"terry is good 3.9"<<endl;
+
+	//delete[] fbuffer;
+	//std::cerr << "constructing poly" << std::endl;
+	//std::cerr << "geom: " << *geom << std::endl;
+	delete currentMesh;
+	return geom;
+}
+
+
+
 
 // performs spatial join on the current tile (bucket)
 int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
@@ -1175,17 +1185,17 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
         		 return 0;
          	}
 
-		//#ifdef DEBUG
+		#ifdef DEBUG
 		std::cerr << "Length of data1: " << len1 << std::endl;
-		std::cerr << "Length of data2: " << len2<< std::endl;
-		//#endif
+		std::cerr << "Length of data2: " << len2 << std::endl;
+		#endif
 
 		#ifdef DEBUGTIME
+		std::cerr<<"start building r-tree index"<<std::endl;
 		time_t rtree_st, rtree_et;
 		double rtree_tt;
 		time(&rtree_st);
 		#endif
-
 		/* Handling for special nearest neighbor query */
 		// build the actual spatial index for input polygons from idx2
 		if (! build_index_geoms(sttemp.mbbdata[idx2], spidx, storage)) {
@@ -1194,6 +1204,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			#endif
 			return -1;
 		}
+
 
 		#ifdef DEBUGTIME
 		time(&rtree_et);
@@ -1213,8 +1224,11 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		#endif*/
 
 
+		cerr<<"terry is good 0"<<endl;
 
 		std::vector<struct mbb_3d *> geom_mbb1 = sttemp.mbbdata[idx1];
+		cerr<<"terry is good 1"<<endl;
+
 		for (int i = 0; i < geom_mbb1.size(); i++) {
 
 			// Extract geometry from compressed data in the shared memeory segment
@@ -1228,6 +1242,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			//Polyhedron* geom1 = poly_set_one[i];
 			//std::cerr << "before Got MBB1!" << std::endl;
 			struct mbb_3d * env1 = geom_mbb1[i];
+			cerr<<"terry is good 2"<<endl;
 
 			low[0] = env1->low[0];
 			low[1] = env1->low[1];
@@ -1250,9 +1265,8 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			MyVisitor vis;
 			vis.matches.clear();
 			/* R-tree intersection check */
-			std::cerr<<"terry is good 1"<<std::endl;
 			spidx->intersectsWithQuery(r, vis);
-
+//todo debugging
 
 			/*#ifdef DEBUGTIME
 			time(&mbb_et);
@@ -1265,14 +1279,18 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			#endif*/
 
 			// This is where iSPEED difference from Hadoopgis starts:
-			std::cerr<<"terry is good 1.5"<<std::endl;
+			cerr<<"ttttttttttttttttttttttttttt: start"<<endl;
+			cerr<< sttemp.offsetdata.size()<<endl;
+			cerr<<"ttttttttttttttttttttttttttt: end"<<endl;
+			cerr <<idx1<<" "<<i<< sttemp.offsetdata[idx1][i] ;
+			cerr <<" "<<sttemp.lengthdata[idx1][i]<<endl;
 
 			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i], sttemp.lengthdata[idx1][i],
 					stop.decomp_lod, stop, sttemp, 0);
-			std::cerr<<"terry is good 2"<<std::endl;
+			cerr<<"terry is good 3"<<endl;
+
 
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
-				std::cerr<<"terry is good 3"<<std::endl;
 
 				/* Skip results that have been seen before (self-join case) */
 				/*

@@ -1,3 +1,6 @@
+#ifndef RTREE_BUILDER_3D_HPP
+#define RTREE_BUILDER_3D_HPP
+
 #include <iostream>
 #include <spatialindex/SpatialIndex.h>
 
@@ -198,4 +201,6 @@ class GEOSDataStreamFileTile : public SpatialIndex::IDataStream
 		std::ifstream m_fin;
 		SpatialIndex::RTree::Data* m_pNext;
 };
+
+#endif
 

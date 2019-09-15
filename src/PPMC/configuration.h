@@ -20,7 +20,6 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-#define SHMSZ     10000000000
 // Size of the compressed data buffer.
 #define BUFFER_SIZE 10 * 1024 * 1024
 
