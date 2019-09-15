@@ -21,7 +21,7 @@
 #include <progparams/resque_constants_3d.h>
 
 // Program parameters
-#include <progparams/resque_params_3d.hpp>
+#include "../progparams/resque_params_3d.cpp"
 
 // Constants used for building the R-tree
 #define FillFactor 0.9

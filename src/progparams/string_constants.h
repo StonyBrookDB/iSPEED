@@ -3,6 +3,8 @@
 #ifndef RESQUE_STR_CONSTANTS
 #define RESQUE_STR_CONSTANTS
 
+#include <string>
+
 const std::string TAB = "\t";
 const std::string SEP = TAB;
 const std::string BAR = "|";

@@ -11,9 +11,9 @@
 #include <cstdlib>
 #include <getopt.h>
 #include <time.h>
-#include <boost/algorithm/string/replace.hpp>
+#include <sys/shm.h>
 
-#include <PPMC/compressionsupport.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_3.h>
@@ -53,7 +53,9 @@
 // Constants
 #include <progparams/resque_constants_3d.h>
 // Program parameters
-#include <progparams/resque_params_3d.hpp>
+#include <PPMC/configuration.h>
+#include <PPMC/mymesh.h>
+#include "../progparams/resque_params_3d.hpp"
 
 typedef CGAL::Bbox_3                                     Bbox;
 //typedef CGAL::Exact_predicates_inexact_constructions_kernel  Kernel;

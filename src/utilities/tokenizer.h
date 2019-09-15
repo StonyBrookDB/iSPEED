@@ -1,9 +1,12 @@
+#ifndef TOKENIZER_H
+#define TOKENIZER_H
+
 #include <string>
 #include <vector>
 
 //using namespace std;
 
-void tokenize ( const std::string& str, std::vector<std::string>& result,
+inline void tokenize ( const std::string& str, std::vector<std::string>& result,
 	const std::string& delimiters = " ,;:\t", 
 	const bool keepBlankFields=false,
 	const std::string& quote="\"\'"
@@ -129,4 +132,6 @@ void tokenize ( const std::string& str, std::vector<std::string>& result,
 	result.push_back("");
     }
 }
+
+#endif
 

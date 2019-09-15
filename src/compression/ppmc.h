@@ -32,15 +32,9 @@
 
 // Constants
 #include <progparams/resque_constants_3d.h>
+#include "../progparams/resque_params_3d.cpp"
 
 // Program parameters
-#include <progparams/resque_params_3d.hpp>
-
-
-
-
-
-
 #include "PPMC/mymesh.h"
 #include "PPMC/configuration.h"
 #define SHMSZ     10000000000

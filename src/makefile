@@ -5,19 +5,15 @@ incbase=${HADOOPGIS_INC_PATH}
 
 builddir=../build/bin
 
-ifdef VALGRINDDEBUG
-    CPPFLAGS += -O0 -g -DDEBUG#for memory leak checking
-else
-    CPPFLAGS += -O2 
-endif
 
-CPPFLAGS	= -std=c++0x -DCOMPRESSED
+
+CPPFLAGS	= -std=c++0x -O2 -DCOMPRESSED -Wno-unused-result
 INCFLAGS	= -I ./ 
 LIBS		= -lgeos -lspatialindex -lboost_program_options -lstdc++ -lgmp -lmpfr
 CGALFLAGS	= -lCGAL -Wl,-rpath
 
 ifdef DEBUG
-    CPPFLAGS += -DDEBUGTIME -DEBUG
+    CPPFLAGS += -DDEBUGTIME -DDEBUG
 else
     CPPFLAGS += -DNDEBUGTIME -DNDEBUG
 endif
@@ -47,9 +43,9 @@ RC_OBJS := $(patsubst %.c,%.o,$(RC_SRCS))
 
 
 all: queryprocessor_3d  stats_extract_space_dims_3d  manipulate_3d  ppmc  \
-	compress_combine  compress_load  fg_3d ot_3d resque_3d
+	compress_combine  compress_load  fg_3d ot_3d resque_3d sampler
 
-queryprocessor_3d: framework/queryprocessor_3d.o mapreducecpp/mapreduce_cpp.o
+queryprocessor_3d: framework/queryprocessor_3d.o mapreducecpp/mapreduce_cpp.o progparams/queryprocessor_params_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${builddir}/$@ -Wno-unused-result
 
 manipulate_3d: transform/manipulate_3d.o
@@ -58,11 +54,10 @@ manipulate_3d: transform/manipulate_3d.o
 ppmc: compression/ppmc.o $(PPMC_OBJS) $(RC_OBJS)
 	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${builddir}/$@
 
-resque_3d: resque/resque_3d.o
+resque_3d: resque/resque_3d.o resque/spjoin.o progparams/resque_params_3d.o $(PPMC_OBJS) $(RC_OBJS)
 	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math -DCGAL_EIGEN3_ENABLED $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${builddir}/$@
 
 #some other simple programs
-
 
 stats_extract_space_dims_3d: utilities/stats_extract_space_dims_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${builddir}/$@
@@ -82,10 +77,10 @@ voronoi_3d: indices/voronoi_3d.o
 sampler: transform/sampler.o
 	$(CXX) $? $(INCFLAGS) $(CPPFLAGS) -o ${builddir}/$@
 
-fg_3d: partitionalgo/fg/fg_3d.o
+fg_3d: partitionalgo/fg/fg_3d.o progparams/partition_params_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${builddir}/$@
 
-ot_3d: partitionalgo/ot/ot_3d.o
+ot_3d: partitionalgo/ot/ot_3d.o progparams/partition_params_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${builddir}/$@
 
 
