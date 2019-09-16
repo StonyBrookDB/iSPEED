@@ -43,8 +43,6 @@ bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
 			("input2,b", po::value<string>(&fr_vars.input_path_2), "HDFS file path to data set 2")
 			("mbb1", po::value<string>(&fr_vars.mbb_path_1), "HDFS path to MBBs of data set 1")
 			("mbb2", po::value<string>(&fr_vars.mbb_path_2), "HDFS path to MBBs of data set 2")
-			("geom1,i", po::value<int>(&fr_vars.shp_idx_1), "Field number of data set 1 containing the geometry. 1 for 3D dataset")
-			("geom2,j", po::value<int>(&fr_vars.shp_idx_2), "Field number of data set 2 containing the geometry. 1 for 3D dataset")
 			("distance,d", po::value<double>(&fr_vars.distance), "Distance (used for certain predicates)")
 			("outputfields,f", po::value<string>(&fr_vars.output_fields), "Fields to be included in the final output \
 separated by commas. See the full documentation. Regular fields from datasets are in the format datasetnum:fieldnum, e.g. 1:1,2:3,1:14. \
@@ -185,24 +183,6 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 
 		// Common parameter strings for program inside the same 
 		stringstream tmpss;
-		tmpss.str("");
-		if (vm.count("geom1")) {
-			tmpss << " -i " << fr_vars.shp_idx_1 << " -a " << fr_vars.input_path_1;
-		}
-		if (vm.count("predicate")) {
-			tmpss << " -p " << fr_vars.predicate;
-		}
-		if (vm.count("outputfields")) {
-			tmpss << " -f " << fr_vars.output_fields;
-		}
-		if (vm.count("geom2") || vm.count("input2")) {
-			tmpss << " -j " << fr_vars.shp_idx_2 << " -b " << fr_vars.input_path_2;
-		}
-		fr_vars.sharedparams = tmpss.str();
-
-		#ifdef DEBUG
-		cerr << "Shared parameters: " << fr_vars.sharedparams << endl;
-		#endif
 
 		// Update number of reducers
 		tmpss.str("");

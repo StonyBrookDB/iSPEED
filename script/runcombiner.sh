@@ -67,7 +67,6 @@ else
     exit 1
 fi
 
-# excluding the current node bmidb4 
 for i in nodelist
 do
 	echo "copying data to node ${i}"

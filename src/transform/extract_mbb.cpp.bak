@@ -19,10 +19,17 @@ clock_t total_query_exec;
 
 const string STR_3D_HEADER = "OFF";
 
+//parameters
+bool extract_mbb = false;
+bool read_mbb = false;
+bool drop_join_idx = false;
+bool reading_mbb = false;
+int sid_second_set = 2;
+char *cachefilename = "";
+
 /* Build indexing on tile boundaries from cache file */
-bool build_index_tiles(char *cachefilename,
-			IStorageManager* &storage, ISpatialIndex * &spidx,
-			std::map<SpatialIndex::id_type, std::string> *id_tiles) {
+bool build_index_tiles(IStorageManager* &storage, ISpatialIndex * &spidx,
+	std::map<SpatialIndex::id_type, std::string> *id_tiles) {
 	// build spatial index on tile boundaries 
 	id_type  indexIdentifier;
 	GEOSDataStreamFileTile stream(cachefilename, id_tiles); // input from cache file
@@ -46,6 +53,10 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 
 	MyVisitor vis;
 
+	/* Space info */
+	double space_low[3];
+	double space_high[3];
+
 	long count_objects = 0;
 	#ifdef DEBUG
 	long count_emitted = 0;
@@ -56,6 +67,15 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 	#ifdef DEBUGTIME
 	start_reading_data = clock();
 	#endif
+
+	// Variables to track
+	int random_id = 0;
+	if (extract_mbb) {
+		struct timeval time; 
+		gettimeofday(&time,NULL);
+		srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
+		random_id = rand() % 10000; // Can use the number of reducers here for better load balancing/key hashing
+	}
 	
 	string input_line;
 	vector<string> fields;
@@ -72,13 +92,11 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		if (input_line.at(input_line.size() - 1) == '\r') {
 			input_line = input_line.substr(0, input_line.size() - 1);
 		}
-		#ifdef DEBUG
-		std::cerr<<"input line:"<<input_line<<std::endl;
-		#endif
 
 		tokenize(input_line, fields, TAB, true);
 		count_objects++;
 		try {
+
 			// for compressed data
 			low[0] = stod(fields[3]);
 			low[1] = stod(fields[4]);
@@ -86,9 +104,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 			high[0] = stod(fields[6]);
 			high[1] = stod(fields[7]);
 			high[2] = stod(fields[8]);
-			//the second dataset will be buffered to assign it to multiple
-			//tiles if needed
-			if(stod(fields[2])==2){
+			if(sid_second_set == stod(fields[2])){
 				low[0] -= xx;
 				low[1] -= yy;
 				low[2] -= zz;
@@ -106,18 +122,34 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 			#endif
 			/* Emit objects to intersecting tiles */
 			for (uint32_t i = 0 ; i < vis.matches.size(); i++ ) {
-				cout<<  (*id_tiles)[vis.matches[i]]	//tile id
-					<< TAB << fields[2]				//dataset id
-					<< TAB << fields[1]				//object id
-					// MBB Info
-					<< TAB << low[0] << TAB << low[1] << TAB << low[2]
-					<< TAB << high[0] << TAB << high[1] << TAB << high[2]
-					<< TAB << fields[9] << TAB << fields[10] << endl; // offset is the beginning point of this object
+				if (reading_mbb) {
+					cout << (*id_tiles)[vis.matches[i]]
+						<< TAB << low[0] << TAB << low[1] << TAB << low[2]
+						<< TAB << high[0] << TAB << high[1] << TAB << high[2] << endl;
+
+				} else if (drop_join_idx) {
+					// Append tile id only
+					cout <<  (*id_tiles)[vis.matches[i]]
+						<< TAB << input_line <<  endl ;
+				} else {
+					// Append tile id and join index
+
+					cout <<  (*id_tiles)[vis.matches[i]]
+						<< TAB << fields[2]
+						//							<< object_id
+						<< TAB << fields[1] 
+						// MBB Info	
+						<< TAB << low[0] << TAB << low[1] << TAB << low[2]
+						<< TAB << high[0] << TAB << high[1] << TAB << high[2]
+						<< TAB << fields[9] << TAB << fields[10] << endl; // offset is the beginning point of this object
+
+				}
 				#ifdef DEBUG
 				count_emitted++;
 				#endif
 			}
 			vis.matches.clear();
+
 		}catch (...) {
 			#ifdef DEBUG
 			count_bad++;
@@ -133,11 +165,16 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		start_reading_data = clock();
 		#endif
 	}
+	/* Output dimensions of space */
+	if (extract_mbb) {
+		cout << "-1" << TAB << space_low[0] << TAB << space_low[1] << TAB << space_low[2] 
+			<< TAB << space_high[0]	<< TAB << space_high[1]	<< TAB << space_high[2] << TAB << count_objects << endl;
+	}
 
 	#ifdef DEBUG
 	/* Output useful statistics */
 	cerr << "Number of processed objects: " << count_objects << endl;
-	cerr << "Number of objects were emitted: " << count_emitted << endl;
+	cerr << "Number of times objects were emitted: " << count_emitted << endl;
 	cerr << "Number of not well formatted objects: " << count_bad << endl;
 	#endif
 }
@@ -146,23 +183,21 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 int main(int argc, char **argv) {	
 	std::map<id_type, string> id_tiles;
 
-	char *cachefilename = "";
-	if(argc < 2){
-		std::cerr<<"usage: manipulate /path/to/partition/file"<<std::endl;
-		return 0;
-	}
-	cachefilename = argv[1];
+	//if cache file is given, then we need not extract mbb, just load the mbbs
+	//from the cache file
 	IStorageManager * storage = NULL;
 	ISpatialIndex * spidx = NULL;
-	if( !build_index_tiles(cachefilename, storage, spidx, &id_tiles)) {
-		#ifdef DEBUG
-		cerr << "ERROR: Index building on tile structure has failed ." << std::endl;
-		#endif
-		return 1 ;
-	} else {
-		#ifdef DEBUG
-		cerr << "GRIDIndex Generated successfully." << endl;
-		#endif
+	if (!extract_mbb) {
+		if( !build_index_tiles(storage, spidx, &id_tiles)) {
+			#ifdef DEBUG
+			cerr << "ERROR: Index building on tile structure has failed ." << std::endl;
+			#endif
+			return 1 ;
+		} else {
+			#ifdef DEBUG
+			cerr << "GRIDIndex Generated successfully." << endl;
+			#endif
+		}
 	}
 
 	// Process input line by line

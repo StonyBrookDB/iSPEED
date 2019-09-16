@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 
 	
 	/* Initialize default values */
-	fr_vars.numreducers = 10;
+	fr_vars.numreducers = 1;
 
 	init_params(fr_vars);
 
@@ -107,225 +107,6 @@ void post_process_stat(char *tmpFile, stringstream &output) {
 }
 #endif
 
-bool extract_mbb(string programpath, vector<string> &input_paths,
-	string output_path, string original_params, struct framework_vars &fr_vars) {
-	hdfs_delete(programpath, output_path);
-	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
-
-	arr_args.push_back("-libjars");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + CUSTOM_JAR_REL_PATH);
-	arr_args.push_back("-outputformat");
-	arr_args.push_back("com.custom.CustomMultiOutputFormat");
-
-	for(vector<string>::iterator it = input_paths.begin(); it != input_paths.end(); ++it) {
-		arr_args.push_back("-input");
-		arr_args.push_back(*it);
-	}
-
-	arr_args.push_back("-output");
-	arr_args.push_back(output_path);
-
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + MANIPULATE);
-
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + SPACE_EXTRACTOR);
-
-	arr_args.push_back("-mapper");
-	arr_args.push_back(MANIPULATE + " --offset 0" + original_params + " --extract ");
-
-	arr_args.push_back("-reducer");
-	arr_args.push_back(SPACE_EXTRACTOR);
-
-	// 2 reducers = 1 for outputting mbb and 1 for outputting spacial_dimension
-	arr_args.push_back("-numReduceTasks");
-	//arr_args.push_back("2");
-	arr_args.push_back(fr_vars.numreducers_str);
-
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
-
-#ifdef DEBUG
-	cerr << "Extract MBB program params: ";
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-#endif
-
-	int status = 0;
-	pid_t childpid;
-	if ((childpid = execute_command(programpath, arr_args))) {
-		if (wait(&status)) {
-#ifdef DEBUG
-			cerr << "Succeeded in extracting MBBs: " << status << endl;
-#endif
-		} else {
-#ifdef DEBUG
-			cerr << "Failed in extracting MBBs: " << status << endl;
-#endif
-			exit(1);
-		}
-		return status == 0 ? true : false;
-	}
-	return false;
-}
-
-bool extract_skeleton(string programpath, string input_path,
-	string output_path, struct framework_vars &fr_vars) {
-	hdfs_delete(programpath, output_path);
-	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
-	
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-
-	/*	
-	arr_args.push_back("-Dmapreduce.max.split.size=10485760");
-	arr_args.push_back("-Dmapred.max.split.size=10485760");
-	arr_args.push_back("-Dmapreduce.min.split.size=10485760");
-	arr_args.push_back("-Dmapred.min.split.size=10485760");
-	arr_args.push_back("-Dmapreduce.input.fileinputformat.split.maxsize=10485760");
-	arr_args.push_back("-Dmapred.input.fileinputformat.split.maxsize=10485760");
-	arr_args.push_back("-Dmapreduce.input.fileinputformat.split.minsize=10485760");
-	arr_args.push_back("-Dmapred.input.fileinputformat.split.minsize=10485760");*/
-
-	/*arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapred.max.split.size=10485760");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.max.split.size=10485760");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapred.min.split.size=0");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.min.split.size=0");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.maxsize=10485760");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.maxsize=10485760");
-	
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.minsize=0");
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.minsize=0");	
-
-	arr_args.push_back("-D");
-	arr_args.push_back("mapreduce.job.maps=10");*/
-
-	arr_args.push_back("-libjars");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + CUSTOM_JAR_REL_PATH);
-	
-
-	arr_args.push_back("-input");	
-	arr_args.push_back(input_path);
-	
-	/*for(vector<string>::iterator it = input_paths.begin()+1; it != input_paths.end(); ++it) {
-		arr_args.push_back("-input");
-		arr_args.push_back(*it);
-	}*/
-
-	arr_args.push_back("-output");
-	arr_args.push_back(output_path);
-
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + SKELETON);
-
-
-	// should also work: 
-	arr_args.push_back("-mapper");
-	arr_args.push_back(SKELETON);
-        //arr_args.push_back("cat");
-	
-	/*arr_args.push_back("-reducer");
-	arr_args.push_back(SPACE_EXTRACTOR);
-
-	// 2 reducers = 1 for outputting mbb and 1 for outputting spacial_dimension
-	arr_args.push_back("-numReduceTasks");
-	//arr_args.push_back("2");
-	arr_args.push_back(fr_vars.numreducers_str);*/
-
-	//arr_args.push_back("-numMapTasks");
-	int a = max(1, static_cast<int>(ceil(fr_vars.obtain_size_2/(5*1024*1024.0))));
-	int b = fr_vars.numreducers;
-	int c = max(1, static_cast<int>(ceil(fr_vars.obtain_size_2/(64*1024*1024.0))));
-	int optimal = 1;
-	if (a >= b && b >= c) {
-		// everything else
-		optimal = b;
-	} else if (b >= a) {
-		// extremely small data set
-		optimal = a;
-	} else {
-		// large to very large data set
-		optimal = c;
-	}
-	optimal = a; // 5M for the skeleton program 
-	//arr_args.push_back(ss.str());
-
-	arr_args.push_back("-numReduceTasks");
-	arr_args.push_back("0");
-	
-	/*arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapred.max.split.size=10485760");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.max.split.size=10485760");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapred.min.split.size=0");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.min.split.size=0");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.maxsize=10485760");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.maxsize=10485760");
-	
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.minsize=0");
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.input.fileinputformat.split.minsize=0");*/
-
-	cerr << "a: " << a  << " b: " << b << " c: " << c <<endl;
-	cerr  <<"Optimal: " << optimal << endl;
-	arr_args.push_back("-jobconf");
-	stringstream ss;
-	ss << "mapreduce.job.maps=" << optimal;
-	arr_args.push_back(ss.str());
-	
-	//arr_args.push_back("-jobconf");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
-
-#ifdef DEBUG
-	cerr << "Extract 3D Skeleton program params: " << endl;
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-#endif
-
-	int status = 0;
-	pid_t childpid;
-	if ((childpid = execute_command(programpath, arr_args))) {
-		if (wait(&status)) {
-#ifdef DEBUG
-			cerr << "Succeeded in extracting Skeletons: " << status << endl;
-#endif
-		} else {
-#ifdef DEBUG
-			cerr << "Failed in extracting Skeletons: " << status << endl;
-#endif
-			exit(1);
-		}
-		return status == 0 ? true : false;
-	}
-	return false;
-}
-
-
 bool compress_data(string programpath, vector<string> &input_paths,
 	string output_path, struct framework_vars &fr_vars) {
 	hdfs_delete(programpath, output_path);
@@ -358,7 +139,7 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	// should also work: 
 	arr_args.push_back("-mapper");
 	stringstream ss;
-	ss << COMPRESSION << " -o 2 " << fr_vars.sharedparams;
+	ss << COMPRESSION << " " << fr_vars.input_path_2;
 	arr_args.push_back(ss.str());
 	ss.str("");
         //arr_args.push_back("cat");
@@ -426,49 +207,13 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	return false;
 }
 
-bool build_voronoi(char *input, char *output, struct framework_vars &fr_vars) {
 
-	vector<string> arr_args;
-	arr_args.push_back(VORONOI);
-	arr_args.push_back(input);
-	arr_args.push_back(output);
-
-	string programpath = fr_vars.hadoopgis_prefix + VORONOI;
-
-#ifdef DEBUG
-	cerr << programpath << endl;
-	cerr << "Build Voronoi program params: ";
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-#endif
-
-	int status = 0;
-	pid_t childpid;
-	if ((childpid = execute_command(programpath, arr_args))) {
-		if (wait(&status)) {
-#ifdef DEBUG
-			cerr << "Succeeded in building Voronois: " << status << endl;
-#endif
-		} else {
-#ifdef DEBUG
-			cerr << "Failed in building Voronois: " << status << endl;
-#endif
-			exit(1);
-		}
-		return status == 0 ? true : false;
-	}
-	return false;
-}
-
-
-
-bool partition_data(string programpath, string input_path, 
-	string output_path, string partitionmethod, int bucket_size, 
-	string sharedparams, int step, double samplerate, struct framework_vars &fr_vars, 
-	char *cachefilename, char *cachefilefullpath) {
-
+bool partition_data(string programpath, string input_path,
+	string output_path, string partitionmethod, int bucket_size,
+	int step, double samplerate, struct framework_vars &fr_vars,
+	char *cachefilefullpath) {
+	char *cachefilename = strrchr(cachefilefullpath, '/'); // pointing to just the name of the cache file
+	cachefilename++;
 	hdfs_delete(programpath, output_path);
 	stringstream ss;
 	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
@@ -499,10 +244,8 @@ bool partition_data(string programpath, string input_path,
 	ss.str("");
 	if (step == 1) {
 		ss << MBB_SAMPLER << " " << samplerate;
-
 	} else {
-		ss << MANIPULATE << " -o 1 " << sharedparams 
-			<< " -c " << cachefilename ;
+		ss << MANIPULATE << " " << cachefilename ;
 		// no more mbb only mode	<< " -c " << cachefilename << " -m";
 	}
 	arr_args.push_back(ss.str());
@@ -527,8 +270,6 @@ bool partition_data(string programpath, string input_path,
 
 	arr_args.push_back("-jobconf");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
 
 #ifdef DEBUG
 	cerr << "Partitioning params: ";
@@ -555,128 +296,6 @@ bool partition_data(string programpath, string input_path,
 	}
 	return false;
 }
-
-
-bool collect_stat(string programpath, string input_path, string output_path, 
-	char *cachefilename, char *cachefilefullpath, struct framework_vars &fr_vars) {
-	hdfs_delete(programpath, output_path);
-	stringstream ss;
-	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
-
-	arr_args.push_back("-conf");
-	arr_args.push_back("/home/vhoang/mapred-site.xml");
-	
-	arr_args.push_back("-input");
-	arr_args.push_back(input_path);
-	arr_args.push_back("-output");
-	arr_args.push_back(output_path);
-
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + STAT_COLLECT_MAPPER);
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + STAT_COLLECT_REDUCER);
-
-	string strtmp(cachefilefullpath);
-	arr_args.push_back("-file");
-	arr_args.push_back(strtmp);
-
-	arr_args.push_back("-mapper");
-	ss.str("");
-	ss << STAT_COLLECT_MAPPER << " -o 1 " << fr_vars.sharedparams 
-			<< " -c " << cachefilename;
-	arr_args.push_back(ss.str());
-
-	arr_args.push_back("-reducer");
-	arr_args.push_back(STAT_COLLECT_REDUCER);
-
-	arr_args.push_back("-numReduceTasks");
-	arr_args.push_back(fr_vars.numreducers_str);
-
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
-
-	#ifdef DEBUG
-	cerr << "Collecting stats";
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-	#endif
-
-	int status = 0;
-	pid_t childpid;
-	if ((childpid = execute_command(programpath, arr_args))) {
-		if (wait(&status)) {
-			#ifdef DEBUG
-			cerr << "Succeeded in collecting stats MBB: " << status << endl;
-			#endif
-		} else {
-			#ifdef DEBUG
-			cerr << "Failed in collecting stats " << status << endl;
-			#endif
-			exit(1);
-		}
-		return status == 0 ? true : false;
-	}
-	return false;
-}
-
-bool duplicate_removal(string programpath, string input_path, string output_path, 
-	struct framework_vars &fr_vars) {
-	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
-	arr_args.push_back("-input");
-	arr_args.push_back(input_path);
-
-	arr_args.push_back("-output");
-	arr_args.push_back(output_path);
-
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + DUPLICATE_REMOVER);
-
-	arr_args.push_back("-mapper");
-	arr_args.push_back(DUPLICATE_REMOVER + " cat");
-
-	//arr_args.push_back("-reducer None");
-	arr_args.push_back("-reducer");
-	arr_args.push_back(DUPLICATE_REMOVER + " uniq");
-	// should also work: 
-	// arr_args.push_back("cat");
-
-	arr_args.push_back("-numReduceTasks");
-	arr_args.push_back(fr_vars.numreducers_str);
-	arr_args.push_back("-jobconf");
-	arr_args.push_back("mapreduce.task.timeout=36000000");
-	arr_args.push_back("-cmdenv");
-	arr_args.push_back(fr_vars.hadoopldlibpath);
-
-#ifdef DEBUG
-	cerr << "Removing duplicate program params: ";
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-#endif
-
-	int status = 0;
-	pid_t childpid;
-	if ((childpid = execute_command(programpath, arr_args))) {
-		if (wait(&status)) {
-#ifdef DEBUG
-			cerr << "Succeeded in boundary handling: " << status << endl;
-#endif
-		} else {
-#ifdef DEBUG
-			cerr << "Failed in boundary handling: " << status << endl;
-#endif
-			exit(1);
-		}
-		return status == 0 ? true : false;
-	}
-	return false;
-}
-
 
 // Read and combine all space info files
 void read_space(char *filename, struct framework_vars &fr_vars) {
@@ -716,8 +335,11 @@ void read_space(char *filename, struct framework_vars &fr_vars) {
 
 
 bool sp_join(string programpath, vector<string> &input_paths,
-		string output_path, string original_params, struct framework_vars &fr_vars,
-		char *cachefilename, char *cachefilefullpath) {
+		string output_path, struct framework_vars &fr_vars,
+		char *cachefilefullpath) {
+	char *cachefilename = strrchr(cachefilefullpath, '/'); // pointing to just the name of the cache file
+	cachefilename++; // Advance the pointer past the slash delimiter character
+
 	hdfs_delete(programpath, output_path);
 	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
 	//arr_args.push_back("-conf");
@@ -730,8 +352,6 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	arr_args.push_back("-output");
 	arr_args.push_back(output_path);
 
-	// MANIPULATE is also used in MBB extraction
-	//
 	arr_args.push_back("-file");
 	arr_args.push_back(fr_vars.hadoopgis_prefix + MANIPULATE);
 	arr_args.push_back("-file");
@@ -740,15 +360,16 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	string strtmp(cachefilefullpath);
 	arr_args.push_back(strtmp);
 
+	// the mapper phase assign each object to
+	// different tiles with its mbb
 	arr_args.push_back("-mapper");
 	stringstream ss;
-	ss << MANIPULATE << " -o 0" << original_params
-		<< " -c " << cachefilename;
+	ss << MANIPULATE << " " << cachefilename;
 	arr_args.push_back(ss.str());
 
 	arr_args.push_back("-reducer");
 	ss.str("");
-	ss << RESQUE << " -o 2" << original_params << " --lod " <<  fr_vars.decomp_lod;
+	ss << RESQUE << " --lod " <<  fr_vars.decomp_lod<<" -j "<<fr_vars.join_cardinality;
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
 	//arr_args.push_back("cat");
 
@@ -844,11 +465,9 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	char *tmpFile = nametemplate;
 	close(tmpfd);
 	tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
-	char *tmpnameonly = strrchr(tmpFile, '/'); // pointing to just the name of the cache file
-	tmpnameonly++; // Advance the pointer past the slash delimiter character
-#ifdef DEBUG
-	cerr << "Temp file name only: " << tmpnameonly << endl;
-#endif
+	#ifdef DEBUG
+	cerr << "Temp file: " << tmpFile << endl;
+	#endif
 
 	// Create another file where you will write the content of all SPACE info paths into
 	// Getting min_x, min_y, min_z, max_z, max_y, max_z
@@ -921,21 +540,18 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	#ifdef DEBUG
 	cerr << "Bucket size: " << fr_vars.bucket_size << endl;
 	cerr << "Sampling rate: " << fr_vars.sampling_rate << endl;
-	cerr << "\n\nPartitioning (1st step)\n" << endl;
 	#endif
-
-
 
 	if (!fr_vars.para_partition) {
 		fr_vars.rough_bucket_size = fr_vars.bucket_size;
 		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
 			#ifdef DEBUG
-			cerr << "\n\nPartitioning 1st steps\n" << endl;
+			cerr << "\nPartitioning 1st steps\n" << endl;
 			#endif
 			// MapReduce partitioning happens here
 			if (!partition_data(fr_vars.hadoopcmdpath, allmbbspath,
 						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.bucket_size,
-						fr_vars.sharedparams, 1, fr_vars.sampling_rate, fr_vars, tmpnameonly, tmpFile)) {
+						1, fr_vars.sampling_rate, fr_vars, tmpFile)) {
 				cerr << "Failed partitioning 1st step" << endl;
 				// Remove cache file
 				remove(tmpFile);
@@ -960,7 +576,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 			#endif
 			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
 						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.rough_bucket_size,
-						fr_vars.sharedparams, 1, fr_vars.sampling_rate, fr_vars, tmpnameonly, tmpFile)) {
+						1, fr_vars.sampling_rate, fr_vars, tmpFile)) {
 				cerr << "Failed partitioning 1st step" << endl;
 				// Remove cache file
 				remove(tmpFile);
@@ -973,9 +589,9 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	bool res_partition = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout, tmpfd);
 	close(tmpfd);
 
-#ifdef DEBUG
+	#ifdef DEBUG
 	cerr << "Temp file name to hold partition boundary: " << tmpFile << endl;
-#endif
+	#endif
 
 	if (fr_vars.para_partition) {
 		// Second round of partitioning
@@ -985,7 +601,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath2)) {
 			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
 						fr_vars.partitionpath2, fr_vars.partition_method_2, fr_vars.bucket_size,
-						fr_vars.sharedparams, 2, 1, fr_vars, tmpnameonly, tmpFile)) {
+						2, 1, fr_vars, tmpFile)) {
 				cerr << "Failed partitioning 2nd step" << endl;
 				// Remove cache file
 				remove(tmpFile);
@@ -996,7 +612,6 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
 		bool res_partition_2 = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout2, tmpfd);
 		close(tmpfd);
-
 	}
 
 	// tmpFile contains partition index
@@ -1041,9 +656,8 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		#ifdef DEBUG
 		cerr << "\n\nExecuting spatial joins\n" << endl;
 		#endif
-		if (!sp_join(fr_vars.hadoopcmdpath, inputresque,
-					fr_vars.joinoutputpath, fr_vars.sharedparams, fr_vars,
-					tmpnameonly, tmpFile)) {
+		if (!sp_join(fr_vars.hadoopcmdpath, inputresque, fr_vars.joinoutputpath, fr_vars,
+					tmpFile)) {
 			cerr << "Failed spatial join" << endl;
 			// Remove cache file
 			//

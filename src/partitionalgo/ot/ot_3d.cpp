@@ -43,6 +43,8 @@ void process_input(struct partition_op &partop) {
 		}
 	}
 
+	cout.flush();
+
 	// Memory cleanup here. 
 
 	for (vector<SpatialObject*>::iterator it = listAllObjects.begin(); it != listAllObjects.end(); it++) { 

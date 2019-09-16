@@ -276,7 +276,7 @@ bool hdfs_check_data(string programpath, string input_path) {
 
 /* Delete the existing directory in hdfs */
 bool hdfs_delete(string programpath, string path) {
-	vector<string> arr_args = {"hadoop", "fs", "-rm", "-r", path};
+	vector<string> arr_args = {"hadoop", "fs", "-rm", "-r", "-f", path};
 	int status = 0;
 	pid_t childpid;
 	if ((childpid = execute_command(programpath, arr_args))) {

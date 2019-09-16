@@ -14,14 +14,9 @@
 
 #include <spatialindex/SpatialIndex.h>
 
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
-
-// Constants
-#include <progparams/resque_constants_3d.h>
-
-// Program parameters
-#include "../progparams/resque_params_3d.cpp"
+#include <progparams/string_constants.h>
+//#include <progparams/resque_params_3d.hpp>
 
 // Constants used for building the R-tree
 #define FillFactor 0.9
@@ -38,11 +33,7 @@ using namespace SpatialIndex;
 //bool build_index_tiles(SpatialIndex::IStorageManager * &storage, SpatialIndex::ISpatialIndex * &spidx);
 //bool process_input(const int join_idx, const int geom_idx, SpatialIndex::IStorageManager * &storage, SpatialIndex::ISpatialIndex * &spidx);
 
-bool build_index_tiles(struct query_op &stop, struct query_temp &sttemp,
-	IStorageManager* &storage, ISpatialIndex * &spidx,
+bool build_index_tiles(char *cachefile, IStorageManager* &storage, ISpatialIndex * &spidx,
 	std::map<SpatialIndex::id_type, std::string> *id_tiles);
-void process_input(struct query_op &stop, struct query_temp &sttemp,
-		const int join_idx, const int geom_idx, 
-		IStorageManager * &storage, ISpatialIndex * &spidx,
+void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		std::map<id_type, string> *id_tiles);
-void init(struct query_op &stop, struct query_temp &sttemp);

@@ -24,6 +24,10 @@ RTree::Data* parseInputPolygon(, id_type m_id) {
 	return new RTree::Data(0, 0 , r, m_id);// store a zero size null poiter.
 };
 */
+struct mbb_3d {
+	double low[3];
+	double high[3];
+};
 class MyVisitor : public SpatialIndex::IVisitor
 {
 	public:

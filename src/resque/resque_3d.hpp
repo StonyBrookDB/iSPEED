@@ -136,10 +136,10 @@ typedef Skeleton::vertex_descriptor                           Skeleton_vertex;
 //using namespace SpatialIndex;
 
 /* Function prototypes */
-void init(struct query_op &stop, struct query_temp &sttemp);
+
 int join_bucket(struct query_op &stop, struct query_temp &sttemp);
 int execute_query(struct query_op &stop, struct query_temp &sttemp);
-int execute_query_cache_file(struct query_op &stop, struct query_temp &sttemp);
+
 int read_cache_file(struct query_op &stop, struct query_temp &sttemp);
 void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard);
 void obtain_field(struct query_op &stop, struct query_temp &sttemp, 

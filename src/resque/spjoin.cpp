@@ -132,7 +132,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 	SpatialIndex::IStorageManager *storage = NULL;
 	SpatialIndex::ISpatialIndex *spidx = NULL;
 	bool selfjoin = stop.join_cardinality == 1  ? true : false;
-
 	/* Indicates where original data is mapped to */
 	int idx1 = SID_1;
 	int idx2 = selfjoin ? SID_1 : SID_2;
@@ -156,8 +155,8 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		int len2 = sttemp.mbbdata[idx2].size();
 
 	 	if (len1 <= 0 || len2 <= 0) {
-        		 return 0;
-         	}
+			 return 0;
+		}
 
 		#ifdef DEBUG
 		std::cerr << "Length of data1: " << len1 << std::endl;

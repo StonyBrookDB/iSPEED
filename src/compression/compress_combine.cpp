@@ -161,16 +161,13 @@ int main(int argc, char** argv) {
 	// Process last batch
 	// Reading and writing the binary file if necessary
 	if (prev_id.size() > 0 ) {
-		#ifdef DEBUG
-		cerr << "Got here" << endl;
-		#endif
-			ss.str("");
-			ss << compstruct.inputbindir << file_prefix << prev_id;
-			string fname = ss.str();
-			const char *fnamechar = fname.c_str();
-			//string inputbinfilename = compstruct.inputbindir + file_prefix + prev_id;
-			ifstream inFile(fnamechar, ios::in | ios::binary);
-			finalFile << inFile.rdbuf();
+		ss.str("");
+		ss << compstruct.inputbindir << file_prefix << prev_id;
+		string fname = ss.str();
+		const char *fnamechar = fname.c_str();
+		//string inputbinfilename = compstruct.inputbindir + file_prefix + prev_id;
+		ifstream inFile(fnamechar, ios::in | ios::binary);
+		finalFile << inFile.rdbuf();
 /*
 		string inputbinfilename = compstruct.inputbindir + file_prefix + mapper_id;
 		ifstream inFile(inputbinfilename.c_str(), ios::in | ios::binary);
@@ -183,7 +180,7 @@ int main(int argc, char** argv) {
 	finalFile.flush();
 	finalFile.close();
 	#ifdef DEBUG
-	cerr << offset << endl; // the total size
+	cerr << "total size is: "<<offset << endl; // the total size
 	#endif
 	return true;
 }

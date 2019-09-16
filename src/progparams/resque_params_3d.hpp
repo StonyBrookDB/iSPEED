@@ -129,11 +129,6 @@ extern char * shm_ptr;
 //long maxoffset = 0;
 extern std::string dummyoutputname;
 
-// for 3d mbb
-struct mbb_3d {
-	double low[3];
-	double high[3];
-};
 
 // for 3d skeleton vertex
 /*struct id_point{
@@ -199,14 +194,12 @@ struct query_temp {
 
 /* Query operator */
 struct query_op {
-	bool use_cache_file;
 	bool reading_mbb; // input is mbb
 	char* cachefilename;
 	
 
 	int join_predicate; /* Join predicate - see resquecommon.h for the full list*/
-	int shape_idx_1; /* geometry field number of the 1st set */
-	int shape_idx_2; /* geometry field number of the 2nd set */
+
 	int join_cardinality; /* Join cardinality */
 	double expansion_distance; /* Distance used in dwithin and k-nearest query */
 	int k_neighbors; /* k - the number of neighbors used in k-nearest neighbor */
@@ -218,29 +211,13 @@ struct query_op {
 	// Value == 2 for joins between 2 data sets
 	// Value == 1 for selfjoin
 
-	/* Mapping-specific */
-	bool extract_mbb;
-	bool collect_mbb_stat;
-	bool use_sampling;
-	double sample_rate;
-	bool drop_join_idx; // Does not append join index when emitting object to tile
-
 	//map<int, geos::geom::Geometry*> geom_tiles; // mapping of actual geomery for tiles
 	std::map<int, long> count_tiles; // mapping of actual geomery index for tiles
-	char* prefix_1; // directory prefix for the files from dataset 1
-	char* prefix_2; // directory prefix for the files from dataset 2
 
 	/* Reducing-specific - RESQUE */
 	int offset; // offset/adjustment for meta data field in RESQUE
 	std::vector<int> proj1; /* Output fields for 1st set  */
 	std::vector<int> proj2; /* Output fields for 2nd set */
-
-	/* Output fields -  parallel arrays/lists */
-	std::vector<int> output_fields; // fields to the output
-	// e.g. 1 is field #1, 2 is fiend #2, the dataset they belong to 
-	// is stored in corresponding position 
-	//in the the output_fields_set_id list 
-	std::vector<int> output_fields_set_id; // meta information to indicate fields to output
 
 	/* Indicate whether symmetric result pair should be included or not */	
 	bool result_pair_duplicate;

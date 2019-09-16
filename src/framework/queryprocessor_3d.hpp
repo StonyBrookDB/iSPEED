@@ -49,8 +49,8 @@ bool build_voronoi(char *input, char *output, struct framework_vars &fr_vars);
 
 bool partition_data(string programpath, string input_path, 
 	string output_path, string partitionmethod, int bucket_size, 
-	string sharedparams, int step, double samplerate, struct framework_vars &fr_vars, 
-	char *cachefilename = NULL, char *cachefilefullpath = NULL);
+	int step, double samplerate, struct framework_vars &fr_vars,
+	char *cachefilefullpath = NULL);
  
 bool collect_stat(string hadoopcmdpath, string input_path, string output_path, 
 	string sharedparams, struct framework_vars &fr_vars, char *tmpnameonly, char *tmpFile);
@@ -60,8 +60,7 @@ bool partition_obj(string programpath, vector<string> &input_paths,
 	char *cachefilename, char *cachefilefullpath);
  
 bool sp_join(string programpath, vector<string> &input_paths, 
-	string output_path, string original_params, struct framework_vars &fr_vars, 
-	char *cachefilename, char *cachefilefullpath);
+	string output_path, struct framework_vars &fr_vars, char *cachefilefullpath);
  
 
 bool execute_spjoin(struct framework_vars &fr_vars);

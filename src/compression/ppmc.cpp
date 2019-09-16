@@ -24,42 +24,20 @@ using namespace CGAL;
 MyMesh *currentMesh = NULL;
 
 // main method
-// Initialize default values in spatial operator structure
-void init(struct query_op &stop, struct query_temp &sttemp) {
-	stop.extract_mbb = true;
-	stop.collect_mbb_stat = false;
-	stop.use_sampling = false;
-	stop.sample_rate = 1.0;
-	stop.offset = 0;
-
-	stop.prefix_1 = NULL;
-	stop.prefix_2 = NULL;
-	stop.shape_idx_1 = 0;
-	stop.shape_idx_2 = 0;
-}
-
 int main(int argc, char** argv) {
 
-	struct query_op stop;
-        struct query_temp sttemp;
-
-
-        init(stop, sttemp);
-
-
-	if (!extract_params(argc, argv, stop, sttemp)) {
-		#ifdef DEBUG 
-		std::cerr <<"ERROR: query parameter extraction error." << std::endl 
-			<< "Please see documentations, or contact author." << std::endl;
-		#endif
-		usage();
-		return -1;
+	if(argc<2){
+		//here we only take the prefix of output2 as the parameter
+		//for judging which dataset we are in
+		std::cerr<<"usage: ppmc /path/to/second/dataset"<<std::endl;
+		return 0;
 	}
+	char *prefix_2 = argv[1];
+
 	char* stdin_file_name = NULL; // name of the input file
 	int join_idx = -1; // index of the current file (0 or 1) matching to dataset 1 or 2
 
 	char* mapper_id = getenv("mapreduce_task_id");
-
 	stdin_file_name = getenv("mapreduce_map_input_file");
 
 
@@ -80,25 +58,8 @@ int main(int argc, char** argv) {
 #ifdef DEBUG
 	std::cerr <<"stdin file name: "<< stdin_file_name<<"\nmapper_id:" <<mapper_id<< std::endl;
 #endif
-	/*
-	 * 	std::string input_line;
-	 *
-	 * while (cin && getline(cin, input_line) && !cin.eof()) {
-    		std::cout << "MBB" << TAB << stdin_file_name << TAB << mapper_id << std::endl;
-	}
-	return 0;
-	*/
 
-//	if (stop.prefix_1!=NULL && strstr(stdin_file_name, stop.prefix_1) != NULL) {
-//		join_idx = SID_1;
-//	} else if (stop.prefix_2!=NULL && strstr(stdin_file_name, stop.prefix_2) != NULL) {
-//		join_idx = SID_2;
-//	} else {
-//		std::cerr << "File name from environment variable "<<stdin_file_name<<" does not match any path prefix" << std::endl;
-//		return -1;
-//	}
-
-	if (stop.prefix_2!=NULL && strstr(stdin_file_name, stop.prefix_2) != NULL) {
+	if (prefix_2!=NULL && strstr(stdin_file_name, prefix_2) != NULL) {
 		join_idx = SID_2;
 	} else {
 		join_idx = SID_1;
