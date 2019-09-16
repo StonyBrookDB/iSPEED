@@ -238,6 +238,7 @@ void MyMesh::stepOperation()
   */
 void MyMesh::batchOperation()
 {
+	std::cerr<<"operation type: "<<operation<<std::endl;
     if (b_jobCompleted)
         return;
     switch (operation)

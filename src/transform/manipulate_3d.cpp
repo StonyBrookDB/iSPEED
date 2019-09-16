@@ -119,15 +119,10 @@ void process_input(struct query_op &stop, struct query_temp &sttemp,
 			input_line = input_line.substr(0, input_line.size() - 1);
 		}
 
-		#ifdef COMPRESSED
 		tokenize(input_line, fields, TAB, true);
-		#else
-		tokenize(input_line, fields, BAR, true);
-		#endif
 		count_objects++;
 		try {
 
-			#ifdef COMPRESSED
 			// for compressed data
 			low[0] = stod(fields[3]);
 			low[1] = stod(fields[4]);
@@ -143,7 +138,6 @@ void process_input(struct query_op &stop, struct query_temp &sttemp,
 				high[1] += yy;
 				high[2] += zz;			
 			}
-			#endif
 
 			Region r(low, high, 3);
 			/* Find objects matching with intersecting tiles*/	
@@ -166,7 +160,6 @@ void process_input(struct query_op &stop, struct query_temp &sttemp,
 				} else {
 					// Append tile id and join index
 
-					#ifdef COMPRESSED
 					cout <<  (*id_tiles)[vis.matches[i]]
 						<< TAB << fields[2]
 						//							<< object_id
@@ -175,17 +168,6 @@ void process_input(struct query_op &stop, struct query_temp &sttemp,
 						<< TAB << low[0] << TAB << low[1] << TAB << low[2]
 						<< TAB << high[0] << TAB << high[1] << TAB << high[2]
 						<< TAB << fields[9] << TAB << fields[10] << endl; // offset is the beginning point of this object
-					#else
-					cout <<  (*id_tiles)[vis.matches[i]]
-						<< TAB << join_idx
-						//							<< object_prefix 
-
-						<< TAB << prefix << BAR << count_objects // Object "ID"	
-						// MBB Info	
-						<< TAB << low[0] << TAB << low[1] << TAB << low[2]
-						<< TAB << high[0] << TAB << high[1] << TAB << high[2]
-						<< TAB << input_line <<  endl ; // geometry
-					#endif
 
 				}
 				#ifdef DEBUG

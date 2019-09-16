@@ -68,11 +68,8 @@ bool execute_spjoin(struct framework_vars &fr_vars);
 
 bool execute_partition(struct framework_vars &fr_vars);
 
-#ifdef COMPRESSED
 bool compress_data(string programpath, vector<string> &input_paths,
    string output_path, struct framework_vars &fr_vars);
-#endif
-
 
 #ifdef DEBUGSTAT
 void post_process_stat(char *tmpFile, stringstream &ss);

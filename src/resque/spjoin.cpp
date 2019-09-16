@@ -14,7 +14,6 @@ using namespace std;
 */
 Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-	cerr<<"terry is good 3.5"<<endl;
 	Polyhedron* geom;
 	/*
 	// moved to global vars
@@ -99,8 +98,6 @@ Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercenta
 	if(currentMesh!=NULL){
 		currentMesh->completeOperation();
 	}
-	cerr<<"terry is good 3.71"<<endl;
-
 	// debug
 
 	std::cerr << "current mesh: " << *currentMesh << std::endl;
@@ -145,7 +142,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 	double low[3], high[3];  // Temporary value placeholders for MBB
 
 
-	//#ifdef COMPRESSED
 	try {
 		//std::cerr << "shm add: " << (long) shm << std::endl;
 
@@ -237,7 +233,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			vis.matches.clear();
 			/* R-tree intersection check */
 			spidx->intersectsWithQuery(r, vis);
-//todo debugging
 
 			/*#ifdef DEBUGTIME
 			time(&mbb_et);
@@ -251,6 +246,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 			// This is where iSPEED difference from Hadoopgis starts:
 
+			//todo debugging
 			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i], sttemp.lengthdata[idx1][i],
 					stop.decomp_lod, stop, sttemp, 0);
 

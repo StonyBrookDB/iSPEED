@@ -486,7 +486,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	#endif
 
 	std::stringstream ss;
-	//#ifdef COMPRESSED  
 	// with compressed data
 	int shmid;		
 	//use the same key to locate the segment.
@@ -518,14 +517,14 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	// Read line by line inputs
 	while (std::cin && getline(std::cin, input_line) && !std::cin.eof()) {
 		tokenize(input_line, fields, TAB, true);
+		if(fields.size()==0){
+			break;
+		}
 	
 		tile_id = fields[0];
 		
 		sid = atoi(fields[1].c_str());
 		
-		#ifdef DEBUG
-		std::cerr << input_line << std::endl;
-		#endif 
 		switch (sid) {
 			case SID_1:
 				index = stop.shape_idx_1 ; 
@@ -653,7 +652,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	start_reading_data = clock();
 	#endif
 
-	//#ifdef COMPRESSED
 
 	#ifdef DEBUG
 	std::cerr <<"Special 2 T[" << previd << "] |" << sttemp.mbbdata[SID_1].size() << "|x|" 
@@ -678,7 +676,6 @@ void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) 
 	if (stop.join_cardinality <= 0) {
 		return ;
 	}
-	#ifdef COMPRESSED
 	for (int j = 0; j < stop.join_cardinality && j < maxCard; j++ ) {
     		int delete_index = j + 1; // index are adjusted to start from 1
     		int len = sttemp.mbbdata[delete_index].size();
@@ -695,20 +692,6 @@ void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) 
 		sttemp.mbbdata[delete_index].clear();
 		sttemp.rawdata[delete_index].clear();
   	}
-	#else
-  	for (int j = 0; j < stop.join_cardinality && j < maxCard; j++ ) {
-    		int delete_index = j + 1; // index are adjusted to start from 1
-    		int len = sttemp.polydata[delete_index].size();
-    		for (int i = 0; i < len ; i++) {
-      			delete sttemp.polydata[delete_index][i];
-			delete sttemp.mbbdata[delete_index][i]; // release mbb
-			sttemp.rawdata[delete_index][i].clear();
-		}
-    		sttemp.polydata[delete_index].clear();
-    		sttemp.rawdata[delete_index].clear();
-		sttemp.mbbdata[delete_index].clear();
-  	}
-	#endif
 }
 
 

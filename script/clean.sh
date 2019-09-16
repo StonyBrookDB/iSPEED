@@ -1,4 +1,5 @@
 #! /bin/bash
 
-rm /tmp/compressionoutputtask_local1*
-hadoop fs -rm -r /user/teng/test1/output*
+rm -f /tmp/compressionoutputtask_local*
+rm -f /tmp/hadoopgis*
+hadoop fs -rm -r -f /user/teng/test1/output*
