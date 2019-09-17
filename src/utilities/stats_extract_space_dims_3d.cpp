@@ -5,7 +5,6 @@
 #include <cstdlib> 
 #include <getopt.h>
 #include <vector>
-
 #include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 

@@ -40,10 +40,14 @@ done
 
 # getting the total/global index
 echo "combining the compression results"
+echo "hdfs dfs -cat $1_mbb/0/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}"
 hdfs dfs -cat "$1""_mbb/0/*" | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}
 echo "done"
 
-# Putting back the file to HDFS as input for Resque
+#remove the temporary files
+#rm -rf ${tmpdir}
+
+# Putting back the file with offset field to HDFS as input for Resque
 hdfs dfs -rm -f "$1""_inputresque"
 hdfs dfs -put -f ${outputmbbs} "$1""_inputresque"
 
@@ -56,27 +60,23 @@ done
 # Run loader
 echo "Running loader to load compressed data on individual nodes"
 
-echo "Testing loading on node bmidb4"
-
-${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}
-
-if [ $? -eq 0 ]; then
-    echo "Succeeded loading on localhost"
-else
-    echo "Failed to load. Exiting"
-    exit 1
-fi
-
-for i in nodelist
+for i in $node_list
 do
-	echo "copying data to node ${i}"
-	# copying the executable (should take a very short time
-	#scp ${HADOOPGIS_BIN_PATH}/compress_load ${i}:${HADOOPGIS_BIN_PATH}/compress_load 
-	# copying the binary file containing all compressed data (might take some time)
-	#scp ${outputfile} ${i}:${outputfile}
-	echo "loading data remotely"
-	#ssh $i "${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}"
-	# for now do not remove yet
-	#ssh i "rm $1/$3*" 
+	echo "loading on node $i"
+	if [ "$i"=="localhost" ];
+	then
+		echo "${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}"
+		${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}
+	else
+		scp -r ${outputfile} ${i}:${outputfile}
+		ssh $i "${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}"
+	fi
+	
+	if [ $? -eq 0 ]; then
+	    echo "Succeeded loading on $i"
+	else
+	    echo "Failed to load. Exiting"
+	    exit 1
+	fi
 done
 

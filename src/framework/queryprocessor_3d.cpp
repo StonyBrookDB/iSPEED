@@ -369,7 +369,10 @@ bool sp_join(string programpath, vector<string> &input_paths,
 
 	arr_args.push_back("-reducer");
 	ss.str("");
-	ss << RESQUE << " --lod " <<  fr_vars.decomp_lod<<" -j "<<fr_vars.join_cardinality;
+	ss << RESQUE
+			<< " --lod " <<  fr_vars.decomp_lod
+			<<" -j "<<fr_vars.join_cardinality
+			<<" -p "<<fr_vars.predicate;
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
 	//arr_args.push_back("cat");
 

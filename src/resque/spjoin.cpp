@@ -15,26 +15,7 @@ using namespace std;
 Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
 	Polyhedron* geom;
-	/*
-	// moved to global vars
-	int shmid;
-    	key_t key;
-    	char *shm, *s;
-	*/
-	/*
-	int shmid;
-	//use the same key to locate the segment.
-	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
-		perror("shmget");
-		exit(1);
-	}
 
-	// Now we attach the segment to our data space.
-	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
-		perror("shmat");
-		exit(1);
-	}
-	*/
 	// Initialize parameters
 	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
 
@@ -55,34 +36,6 @@ Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercenta
 
 	// Init the random number generator.
 	srand(4212);
-	//std::cerr << "got to this part 1" << std::endl;
-	//read the mesh:
-
-	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
-
-	/*
-	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
-	file.seekg(0, std::ios::beg);
-
-	char * fbuffer = new char[2000000];
-        file.read(fbuffer,length);
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", fbuffer[i]);
-	}
-	printf("\n");
-	*/
-	/*
-	printf("resque shared buffer: ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", resque_decomp_buffer[i]);
-	}
-	printf("\n");
-	printf("shm current at offset  ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
-	}
-	printf("\n");
-	*/
 	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
 				i_decompPercentage,
 		             i_mode, i_quantBit, b_useAdaptiveQuantization,
@@ -94,13 +47,9 @@ Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercenta
 				// fbuffer, length, resque_decomp_buffer);
 		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
 	assert(currentMesh!=NULL);
-	cerr<<"terry is good 3.7"<<endl;
-	if(currentMesh!=NULL){
-		currentMesh->completeOperation();
-	}
-	// debug
+	currentMesh->completeOperation();
 
-	std::cerr << "current mesh: " << *currentMesh << std::endl;
+	//std::cerr << "current mesh: " << *currentMesh << std::endl;
 	std::stringstream os;
 	os << *currentMesh;
 	//os.clear();
@@ -108,14 +57,12 @@ Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercenta
 	std::cerr << "done decomp" << std::endl;
 	geom = new Polyhedron();
 	os >> *geom;
-	std::cerr << "os: " << os.str() << std::endl;
-	cerr<<"terry is good 3.8"<<endl;
+	//std::cerr << "os: " << os.str() << std::endl;
 
 	// only when volume is needed
 	//if (stop.needs_intersect_volume) {
 		sttemp.poly_str[dataset_id].str(os.str());
 	//}
-		cerr<<"terry is good 3.9"<<endl;
 
 	//delete[] fbuffer;
 	//std::cerr << "constructing poly" << std::endl;
@@ -159,8 +106,9 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		}
 
 		#ifdef DEBUG
-		std::cerr << "Length of data1: " << len1 << std::endl;
-		std::cerr << "Length of data2: " << len2 << std::endl;
+		std::cerr<<"\nstart one round of joining"<<std::endl;
+		std::cerr << "Length of data"<<idx1<<": " << len1 << std::endl;
+		std::cerr << "Length of data"<<idx2<<": " << len2 << std::endl;
 		#endif
 
 		#ifdef DEBUGTIME
@@ -189,7 +137,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		std::cerr << "********************************************" << std::endl;
 		#endif
 
-//if (0){
 		/*#ifdef DEBUGTIME
 		time_t mbb_st, mbb_et;
 		double mbb_tt;
@@ -232,6 +179,12 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			vis.matches.clear();
 			/* R-tree intersection check */
 			spidx->intersectsWithQuery(r, vis);
+			if(vis.matches.size()==0){
+				continue;
+			}
+			#ifdef DEBUG
+			std::cerr<<vis.matches.size()<<" objects in dataset 2 is matched"<<std::endl;
+			#endif
 
 			/*#ifdef DEBUGTIME
 			time(&mbb_et);
@@ -245,9 +198,8 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 			// This is where iSPEED difference from Hadoopgis starts:
 
-			//todo debugging
-			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i], sttemp.lengthdata[idx1][i],
-					stop.decomp_lod, stop, sttemp, 0);
+			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
+					sttemp.lengthdata[idx1][i], stop.decomp_lod, stop, sttemp, 0);
 
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
 
@@ -263,10 +215,8 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				*/
 
 				Polyhedron* geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
-					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod,
-					stop, sttemp, 1);
+					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod, stop, sttemp, 1);
 				struct mbb_3d * env2 = sttemp.mbbdata[idx2][vis.matches[j]];
-				//std::cout << "already got geom1 and geom2: " << std::endl; // to compare * operator and yes or no question
 
 				// for now only decomp time
 				//std::cout << i << TAB << vis.matches[j] << std::endl;
@@ -283,12 +233,12 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				if (join_with_predicate(stop, sttemp, geom1, geom2, env1, env2,
 							stop.join_predicate))  {
 					//std::cerr << i << TAB << vis.matches[j] << std::endl;
-				//	report_result(stop, sttemp, i, vis.matches[j]);
-				//	std::cout << i << TAB << vis.matches[j] << << sttemp. <<std::endl;
+					//	report_result(stop, sttemp, i, vis.matches[j]);
+					//	std::cout << i << TAB << vis.matches[j] << << sttemp. <<std::endl;
 
-				#ifdef DEBUG
-				std::cerr << "Actual intersected with each other " << i << TAB << vis.matches[j] << std::endl;
-				#endif
+					#ifdef DEBUG
+					std::cerr << "Actual intersected with each other " << i << TAB << vis.matches[j] << std::endl;
+					#endif
 					pairs++;
 				}
 
@@ -306,7 +256,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			}
 			delete geom1;
 		}
-		//shmdt(shm);  // detach shared memory segment
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;
 		#ifdef DEBUG
@@ -315,14 +264,9 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		return -1;
 	} // end of catch
 
-
-
-	std::cout << pairs << std::endl;
-
 	delete spidx;
 	delete storage;
 	return pairs ;
-//}
 }
 
 

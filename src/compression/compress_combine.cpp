@@ -85,19 +85,12 @@ int main(int argc, char** argv) {
 		#endif
 		return -1;
 	}
+	#ifdef DEBUG
+	cerr<<"merging into file "<<compstruct.outputbin<<endl;
+	#endif
 
 	string input_line; // Temporary line
 	vector<string> fields; // Temporary fields
-
-	/*
-	// MBB and space info
-	double tmp_x, tmp_y, tmp_z;
-	double low[3];
-	double high[3];
-	bool firstLineRead = false;
-	double space_low[3];
-	double space_high[3];
-	*/
 
 	string mapper_id;
 	
@@ -114,19 +107,16 @@ int main(int argc, char** argv) {
 	stringstream ss;
 	// Read standard input
 	while (cin && getline(cin, input_line) && !cin.eof()) {
+		//input format
+		//mapper_id obj_id dataset_id mbb*6 length
 		
-		// Removal of \r symbol on Windows
-		// Here data is from HDFS, not from Windows
-		/*if (input_line.at(input_line.size() - 1) == '\r') {
-			input_line = input_line.substr(0, input_line.size() - 1);
-		}*/
 		tokenize(input_line, fields, TAB, true);
 		mapper_id = fields[MAPPER_ID_FIELD];
-	//	cerr << "offset: " << offset << endl;
-		// output the fields
-		cout << mapper_id 
-			<< TAB << fields[OBJ_ID_FIELD]// << TAB << obj_id 
-			<< TAB << fields[JOIN_IDX_FIELD];  // << TAB << join_idx
+		//output the fields
+		//mapper_id obj_id dataset_id mbb*6 offset length
+		cout << fields[MAPPER_ID_FIELD]
+			 << TAB << fields[OBJ_ID_FIELD]// << TAB << obj_id
+			 << TAB << fields[JOIN_IDX_FIELD];  // << TAB << join_idx
 		// Output MBBs
 		for (counter = 0; counter < 2 * NUMBER_DIMENSIONS; counter++) {
 			cout << TAB << fields[MBB_START_FIELD + counter];
@@ -137,25 +127,21 @@ int main(int argc, char** argv) {
 		// Adding to the running offset total. This will be the offset of the next object
 		offset += stol(fields[LENGTH_FIELD]);
 
-		// compute offset for next object
-
-		#ifdef DEBUG
-		cerr << "Processing " << count_objects << endl;
-		#endif
-
 		fields.clear();
-
 		// Reading and writing the binary file if necessary
 		if (prev_id.compare(mapper_id) != 0 && prev_id.size() > 0 ) {
 			ss.str("");
 			ss << compstruct.inputbindir << file_prefix << prev_id;
 			string fname = ss.str();
 			const char *fnamechar = fname.c_str();
-			//string inputbinfilename = compstruct.inputbindir + file_prefix + prev_id;
+			#ifdef DEBUG
+			cerr<<"merging from file "<<ss.str()<<endl;
+			#endif
 			ifstream inFile(fnamechar, ios::in | ios::binary);
 			finalFile << inFile.rdbuf();
 		}
 		prev_id = mapper_id;
+		count_objects++;
 	} 
 
 	// Process last batch
@@ -165,22 +151,20 @@ int main(int argc, char** argv) {
 		ss << compstruct.inputbindir << file_prefix << prev_id;
 		string fname = ss.str();
 		const char *fnamechar = fname.c_str();
-		//string inputbinfilename = compstruct.inputbindir + file_prefix + prev_id;
+		#ifdef DEBUG
+		cerr<<"merging from file "<<ss.str()<<endl;
+		#endif
 		ifstream inFile(fnamechar, ios::in | ios::binary);
 		finalFile << inFile.rdbuf();
-/*
-		string inputbinfilename = compstruct.inputbindir + file_prefix + mapper_id;
-		ifstream inFile(inputbinfilename.c_str(), ios::in | ios::binary);
-		finalFile << inFile.rdbuf();
-*/
-			
-
 	}
 
+	//cleaning
 	finalFile.flush();
 	finalFile.close();
+
 	#ifdef DEBUG
-	cerr << "total size is: "<<offset << endl; // the total size
+	cerr << "processed:	"<<count_objects<<endl;
+	cerr << "total size is:	"<<offset << endl; // the total size
 	#endif
 	return true;
 }

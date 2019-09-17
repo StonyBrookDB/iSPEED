@@ -29,113 +29,113 @@ clock_t start_query_exec;
 clock_t total_reading;
 clock_t total_query_exec;
 
-Sc_Polyhedron* sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-	Sc_Polyhedron* geom;
-	/*
-	// moved to global vars
-	int shmid;
-    	key_t key;
-    	char *shm, *s;
-	*/
-	/*
-	int shmid;
-	//use the same key to locate the segment.
-	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
-		perror("shmget");
-		exit(1);
-	}
-	    
-	// Now we attach the segment to our data space.
-	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
-		perror("shmat");
-		exit(1);
-	}
-	*/
-	// Initialize parameters
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-
-	#ifdef DEBUG
-	std::cout << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
-	#endif
-	std::cerr << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
-	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
-	bool b_allowConcaveFaces = true;
-	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
-	
-	// Init the random number generator.
-	srand(4212);
-	//std::cerr << "got to this part 1" << std::endl;
-	//read the mesh:
-
-	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
-
-	/*
-	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
-	file.seekg(0, std::ios::beg);
-
-	char * fbuffer = new char[2000000];
-        file.read(fbuffer,length);
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", fbuffer[i]);
-	}
-	printf("\n");
-	*/
-	/*
-	printf("resque shared buffer: ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", resque_decomp_buffer[i]);
-	}
-	printf("\n");
-	printf("shm current at offset  ");
-    	for (size_t i = 0; i < length; ++i) {
-		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
-	}
-	printf("\n");
-	*/
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname, 
-				i_decompPercentage,
-		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-		             b_useLiftingScheme, b_useCurvaturePrediction,
-		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, 
-				dummyoutputname, 
-				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-				// fbuffer, length, resque_decomp_buffer);
-		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
-	
-	currentMesh->completeOperation();
-	
-	// debug
-
-	//std::cerr << "current mesh: " << *currentMesh << std::endl;
-	std::stringstream os;
-	os << *currentMesh;
-	//os.clear();
-	
-	std::cerr << "done decomp" << std::endl;
-	geom = new Sc_Polyhedron();
-	os >> *geom;
-	//std::cerr << "os: " << os.str() << std::endl;
-	
-	// only when volume is needed
-	//if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	//}
-
-	//delete[] fbuffer;
-	std::cerr << "constructing sk poly" << std::endl;
-	//std::cerr << "geom: " << *geom << std::endl;
-	delete currentMesh;
-	return geom;
-}
+//Sc_Polyhedron* sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
+//	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
+//	Sc_Polyhedron* geom;
+//	/*
+//	// moved to global vars
+//	int shmid;
+//    	key_t key;
+//    	char *shm, *s;
+//	*/
+//	/*
+//	int shmid;
+//	//use the same key to locate the segment.
+//	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
+//		perror("shmget");
+//		exit(1);
+//	}
+//
+//	// Now we attach the segment to our data space.
+//	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
+//		perror("shmat");
+//		exit(1);
+//	}
+//	*/
+//	// Initialize parameters
+//	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
+//
+//	#ifdef DEBUG
+//	std::cout << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
+//	#endif
+//	std::cerr << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
+//	// Codec features status.
+//	bool b_useAdaptiveQuantization = false;
+//	bool b_useLiftingScheme = true;
+//	bool b_useCurvaturePrediction = true;
+//	bool b_useConnectivityPredictionFaces = true;
+//	bool b_useConnectivityPredictionEdges = true;
+//	bool b_allowConcaveFaces = true;
+//	bool b_useTriangleMeshConnectivityPredictionFaces = true;
+//	unsigned i_quantBit = 12;
+//	//unsigned i_decompPercentage = 100;
+//
+//	// Init the random number generator.
+//	srand(4212);
+//	//std::cerr << "got to this part 1" << std::endl;
+//	//read the mesh:
+//
+//	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
+//
+//	/*
+//	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
+//	file.seekg(0, std::ios::beg);
+//
+//	char * fbuffer = new char[2000000];
+//        file.read(fbuffer,length);
+//    	for (size_t i = 0; i < length; ++i) {
+//		printf("%02X ", fbuffer[i]);
+//	}
+//	printf("\n");
+//	*/
+//	/*
+//	printf("resque shared buffer: ");
+//    	for (size_t i = 0; i < length; ++i) {
+//		printf("%02X ", resque_decomp_buffer[i]);
+//	}
+//	printf("\n");
+//	printf("shm current at offset  ");
+//    	for (size_t i = 0; i < length; ++i) {
+//		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
+//	}
+//	printf("\n");
+//	*/
+//	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
+//				i_decompPercentage,
+//		             i_mode, i_quantBit, b_useAdaptiveQuantization,
+//		             b_useLiftingScheme, b_useCurvaturePrediction,
+//		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+//		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+//				dummyoutputname,
+//				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
+//				// fbuffer, length, resque_decomp_buffer);
+//		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
+//
+//	currentMesh->completeOperation();
+//
+//	// debug
+//
+//	//std::cerr << "current mesh: " << *currentMesh << std::endl;
+//	std::stringstream os;
+//	os << *currentMesh;
+//	//os.clear();
+//
+//	std::cerr << "done decomp" << std::endl;
+//	geom = new Sc_Polyhedron();
+//	os >> *geom;
+//	//std::cerr << "os: " << os.str() << std::endl;
+//
+//	// only when volume is needed
+//	//if (stop.needs_intersect_volume) {
+//		sttemp.poly_str[dataset_id].str(os.str());
+//	//}
+//
+//	//delete[] fbuffer;
+//	std::cerr << "constructing sk poly" << std::endl;
+//	//std::cerr << "geom: " << *geom << std::endl;
+//	delete currentMesh;
+//	return geom;
+//}
 
 // Performs spatial query on data stored in query_temp using operator query_op
 int execute_query(struct query_op &stop, struct query_temp &sttemp)
@@ -208,8 +208,8 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 		std::cerr<<tt++<<" line content:"<<input_line<<std::endl;
 #endif
 		tokenize(input_line, fields, TAB, true);
-		if(fields.size()==0){
-			break;
+		if(fields.size()==0){//skip the empty lines
+			continue;
 		}
 	
 		tile_id = fields[0];
@@ -306,16 +306,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	}
 
 	#ifdef DEBUGTIME
-	time(&data_et);
-	data_tt = difftime(data_et,data_st);
-	std::cerr << "********************************************" << std::endl;
-	std::cerr << "Data loading and parsing total execution time: " 
-		<< data_tt
-		<< " seconds." << std::endl;
-	std::cerr << "********************************************" << std::endl;
-	#endif
-
-	#ifdef DEBUGTIME
 	total_reading += clock() - start_reading_data;
 	start_query_exec = clock();
 	#endif
@@ -329,6 +319,15 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	start_reading_data = clock();
 	#endif
 
+	#ifdef DEBUGTIME
+	time(&data_et);
+	data_tt = difftime(data_et,data_st);
+	std::cerr << "********************************************" << std::endl;
+	std::cerr << "Data loading and parsing total execution time: "
+		<< data_tt
+		<< " seconds." << std::endl;
+	std::cerr << "********************************************" << std::endl;
+	#endif
 
 	#ifdef DEBUG
 	std::cerr <<"Special 2 T[" << previd << "] |" << sttemp.mbbdata[SID_1].size() << "|x|" 

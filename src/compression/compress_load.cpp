@@ -83,11 +83,6 @@ bool extract_params(int ac, char** av, struct compress_struct & compstruct){
 
 
 int main(int argc, char** argv) {
-	#ifdef DEBUG
-	cerr << "size_t max: " << SIZE_MAX << endl;
-	
-	#endif
-
 
 	struct compress_struct compstruct;
 	compstruct.cleanmode = false;
@@ -130,6 +125,11 @@ int main(int argc, char** argv) {
 	cerr << "size: " << size << " key: " << compstruct.key << endl;
 	#endif
 
+	if(size == 0){
+		cerr<<"the file "<<compstruct.binarypath<<" is empty"<<endl;
+		exit(1);
+	}
+
 	// Create the segment.
 	if ((shmid = shmget(compstruct.key, size, IPC_CREAT | 0666)) < 0) {
 		perror("shmget");
@@ -142,23 +142,14 @@ int main(int argc, char** argv) {
 		exit(1);
 	}    
 
-	cout << "Content of first byte: " << (* ((int *) shm)) << endl;
-	// read in chunks
-	
-
-	// old read
-	// file.read(shm, size);
-	cerr << "Amount read = " << file.gcount() << endl;
-	/*
-	if (file.read(shm, size))
-	{
+	if (file.read(shm, size)) {
 		#ifdef DEBUG
 		cerr << "Done loading objects into memory" << endl;
 		#endif
 	} else {
 		cerr << "Cannot load" << endl;
 		return 1;
-	}*/
+	}
 
 	cout << "Content of first byte: " << (* ((int *) shm)) << endl;
 	shmdt(shm);
