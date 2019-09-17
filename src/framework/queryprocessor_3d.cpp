@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	time_t start_exec_time, end_exec_time;
 	double total_exec_time;
 	time(&start_exec_time);
@@ -46,14 +46,14 @@ int main(int argc, char** argv) {
 	if (fr_vars.query_type.compare(QUERYPROC_JOIN) == 0) {
 		execute_spjoin(fr_vars);		
 	}
-	#ifdef DEBUGTIME
-		time(&end_exec_time);
-		total_exec_time = difftime(end_exec_time,start_exec_time);
-		cerr << "********************************************" << endl;
-		cerr << "Total execution time: " 
-			<< total_exec_time
-			<< " seconds." << endl;
-		cerr << "********************************************" << endl;
+	#ifdef DEBUG
+	time(&end_exec_time);
+	total_exec_time = difftime(end_exec_time,start_exec_time);
+	cerr << "********************************************" << endl;
+	cerr << "Total execution time: "
+		<< total_exec_time
+		<< " seconds." << endl;
+	cerr << "********************************************" << endl;
 	#endif
 
 }
@@ -120,10 +120,6 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	arr_args.push_back("-outputformat");
 	arr_args.push_back("com.custom.CustomMultiOutputFormat");
 	
-	/*
-	arr_args.push_back("-input");	
-	arr_args.push_back(input_path);
-	*/
 	for(vector<string>::iterator it = input_paths.begin() ; it != input_paths.end(); ++it) {
 		arr_args.push_back("-input");
 		arr_args.push_back(*it);
@@ -135,71 +131,32 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	arr_args.push_back("-file");
 	arr_args.push_back(fr_vars.hadoopgis_prefix + COMPRESSION);
 
-
-	// should also work: 
+	//ppmc is used to compress each object and extract mbbs
+	//the path for the second dataset is used for identifying
+	//which dataset each mapper processed
 	arr_args.push_back("-mapper");
 	stringstream ss;
 	ss << COMPRESSION << " " << fr_vars.input_path_2;
 	arr_args.push_back(ss.str());
 	ss.str("");
-        //arr_args.push_back("cat");
-	
-	/*arr_args.push_back("-reducer");
-	arr_args.push_back(SPACE_EXTRACTOR);
-
-	// 2 reducers = 1 for outputting mbb and 1 for outputting spacial_dimension
-	arr_args.push_back("-numReduceTasks");
-	//arr_args.push_back("2");
-	arr_args.push_back(fr_vars.numreducers_str);*/
-
-	//arr_args.push_back("-numMapTasks");
-	//
-	/*
-	int a = max(1, static_cast<int>(ceil(fr_vars.obtain_size_2/(5*1024*1024.0))));
-	int b = fr_vars.numreducers;
-	int c = max(1, static_cast<int>(ceil(fr_vars.obtain_size_2/(64*1024*1024.0))));
-	int optimal = 1;
-	if (a >= b && b >= c) {
-		// everything else
-		optimal = b;
-	} else if (b >= a) {
-		// extremely small data set
-		optimal = a;
-	} else {
-		// large to very large data set
-		optimal = c;
-	}
-	optimal = a; // 5M for the skeleton program 
-	//arr_args.push_back(ss.str());
-	*/
 	arr_args.push_back("-numReduceTasks");
 	arr_args.push_back("0");
-	/*
-	//arr_args.push_back("-jobconf");
-	ss << "mapreduce.job.maps=" << optimal;
-	arr_args.push_back(ss.str());
-	*/
-	//arr_args.push_back("-jobconf");
 
-#ifdef DEBUG
+	#ifdef DEBUG
 	cerr << "Compress data program params: " << endl;
 	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
 		cerr << *it << " ";
 	}
 	cerr << endl;
-#endif
+	#endif
 
 	int status = 0;
 	pid_t childpid;
 	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
-#ifdef DEBUG
 			cerr << "Succeeded in compressing data: " << status << endl;
-#endif
 		} else {
-#ifdef DEBUG
 			cerr << "Failed in compressing data: " << status << endl;
-#endif
 			exit(1);
 		}
 		return status == 0 ? true : false;
@@ -413,10 +370,14 @@ bool sp_join(string programpath, vector<string> &input_paths,
 
 
 bool execute_spjoin(struct framework_vars &fr_vars) {
+
+	/*
+	 * 1: in the first phase, load data from all data sets, and
+	 *    extract mbbs and compress them with ppmc
+	 * */
 	// First check if dataset 1 has been loaded or not
 	// Find the size of datasets 1 and 2
-	//   in order to compute partitioning parameter (bucket size)
-	// loaded_1 = hdfs_check_data(hadoopcmdpath, input_path_1 + "/" + PARTITION_FILE_NAME);
+	// in order to compute partitioning parameter (bucket size)
 	fr_vars.obtain_size_1 = hdfs_get_size(fr_vars.hadoopcmdpath, fr_vars.input_path_1);
 	if (fr_vars.obtain_size_1 >= 0) {
 		fr_vars.spinfo.total_size = fr_vars.obtain_size_1;
@@ -430,19 +391,18 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 			fr_vars.spinfo.total_size += fr_vars.obtain_size_2;
 		}
 	}
-#ifdef DEBUG
+
+	#ifdef DEBUG
 	cerr << "Total size of 1 " << fr_vars.obtain_size_1 << endl;
 	if (fr_vars.join_cardinality > 1) {
 		cerr << "Total size of 2 " << fr_vars.obtain_size_2 << endl;
 	}
 	cerr << "Total object size: " << fr_vars.spinfo.total_size << endl;
-	cerr << "Data 1 is loaded " << (fr_vars.loaded_1 ? "true" : "false" ) << endl;
-	cerr << "Data 2 is loaded " << (fr_vars.loaded_2 ? "true" : "false" ) << endl;
-#endif
+	#endif
 
 	vector<string> inputpaths;
 
-	/*// Neither data has been indexed */
+	// Neither data has been indexed
 	string mbb_output = fr_vars.output_path + "_mbb";
 	inputpaths.push_back(fr_vars.input_path_1);
 	if (fr_vars.join_cardinality > 1) {
@@ -450,14 +410,13 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	}
 	// compress the input data
 	// -- Extract object MBB and grab space dimension
-	//  -- and compress data at the same time ([Hoang] thinks)
-	cerr << "# of input paths: " << inputpaths.size() << TAB << fr_vars.join_cardinality << endl;
+	// -- and compress data at the same time to binary files
+	cerr << "# of input paths: " << inputpaths.size() << endl;
 	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.mbb_output)) {
 		#ifdef DEBUG
-		cerr << "\n\nCompressing & Extracting MBBs\n" << endl;
+		cerr << "\nCompressing & Extracting MBBs\n" << endl;
 		#endif
-		if (!compress_data(fr_vars.hadoopcmdpath, inputpaths,
-				fr_vars.mbb_output, fr_vars)) {
+		if (!compress_data(fr_vars.hadoopcmdpath, inputpaths, fr_vars.mbb_output, fr_vars)) {
 			cerr << "Failed extracting MBB"  << endl;
 			exit(1);
 		}
@@ -481,56 +440,43 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	read_space(tmpFile, fr_vars);
 	#ifdef DEBUG
 	cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB
-	<< fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
-	<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1]
-	<< TAB << fr_vars.spinfo.space_high[2] << endl;
+		 << fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
+		 << fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1] << TAB
+		 << fr_vars.spinfo.space_high[2] << endl;
 	cerr << "Number objects: " << fr_vars.spinfo.num_objects << endl;
 	#endif
 	std::ofstream ofs;
 	ofs.open (tmpFile, std::ofstream::out | std::ofstream::trunc);
-	ofs << "T" << TAB << fr_vars.spinfo.space_low[0] << TAB << fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2]
-	 << TAB	<< fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1] << TAB << fr_vars.spinfo.space_high[2]
-		<< TAB << fr_vars.spinfo.num_objects << endl;
+	ofs << "T" << TAB
+		<< fr_vars.spinfo.space_low[0] << TAB << fr_vars.spinfo.space_low[1] << TAB
+		<< fr_vars.spinfo.space_low[2] << TAB << fr_vars.spinfo.space_high[0] << TAB
+		<< fr_vars.spinfo.space_high[1] << TAB << fr_vars.spinfo.space_high[2] << TAB
+		<< fr_vars.spinfo.num_objects << endl;
 	ofs.close();
 
 	// Saving those info into a struct that gets passed along query parameters into sequential steps
-
-
 	if (fr_vars.comp_mode) {
-		// stop the program
+		// stop the program before running combiners
 		cerr << "Done with compression" << endl;
 		return 0;
 	}
 
-	// Run combiner on primary node and then loaders on all nodes
-	//
-	// runcombiner.sh kind of belongs here
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	//
-	// Dejun:
+	/*
+	 * 2: in the second phase Run combiner on primary node and then loaders on all nodes
+	 *    to load the compressed data into a shared memory
+	 * */
+
+
+	/*
+	 * 3: do the real spatial join in the third phase
+	 *
+	 * */
 	string allmbbspath = fr_vars.output_path + "_inputresque";
 	vector<string> inputresque;
 	inputresque.push_back(allmbbspath);
 
+	//partition objects into tiles
 	cerr << "Start partitioning" << endl;
-
 	// Setting default block size if it has not been set
 	if (fr_vars.bucket_size < 0) {
 		// Bucket size was not set

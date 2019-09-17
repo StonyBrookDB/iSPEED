@@ -111,7 +111,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		std::cerr << "Length of data"<<idx2<<": " << len2 << std::endl;
 		#endif
 
-		#ifdef DEBUGTIME
+		#ifdef DEBUG
 		std::cerr<<"start building r-tree index"<<std::endl;
 		time_t rtree_st, rtree_et;
 		double rtree_tt;
@@ -127,7 +127,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		}
 
 
-		#ifdef DEBUGTIME
+		#ifdef DEBUG
 		time(&rtree_et);
 		rtree_tt = difftime(rtree_et,rtree_st);
 		std::cerr << "********************************************" << std::endl;
@@ -137,7 +137,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		std::cerr << "********************************************" << std::endl;
 		#endif
 
-		/*#ifdef DEBUGTIME
+		/*#ifdef DEBUG
 		time_t mbb_st, mbb_et;
 		double mbb_tt;
 		time(&mbb_st);
@@ -186,7 +186,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			std::cerr<<vis.matches.size()<<" objects in dataset 2 is matched"<<std::endl;
 			#endif
 
-			/*#ifdef DEBUGTIME
+			/*#ifdef DEBUG
 			time(&mbb_et);
 			rtree_tt = difftime(mbb_et,mbb_st);
 			std::cerr << "********************************************" << std::endl;
@@ -224,7 +224,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				std::cerr << "Checking actual intersection between " << i << TAB << vis.matches[j] << std::endl;
 				#endif
 
-				#ifdef DEBUGTIME
+				#ifdef DEBUG
 				time_t geometry_st, geometry_et;
 				double geometry_tt;
 				time(&geometry_st);
@@ -242,7 +242,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 					pairs++;
 				}
 
-				#ifdef DEBUGTIME
+				#ifdef DEBUG
 				time(&geometry_et);
 				geometry_tt = difftime(geometry_et,geometry_st);
 				std::cerr << "********************************************" << std::endl;

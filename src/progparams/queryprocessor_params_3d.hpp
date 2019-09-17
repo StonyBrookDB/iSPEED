@@ -92,8 +92,6 @@ struct framework_vars {
 	long size_2;
 	double obtain_size_1;
 	double obtain_size_2;
-	bool loaded_1;
-	bool loaded_2;
 	int join_cardinality;
 	// 3d compression
 	int decomp_lod;

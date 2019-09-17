@@ -15,9 +15,9 @@ LIBS		= -lgeos -lspatialindex -lboost_program_options -lstdc++ -lgmp -lmpfr
 CGALFLAGS	= -lCGAL -Wl,-rpath
 
 ifdef DEBUG
-    CPPFLAGS += -DDEBUGTIME -DDEBUG
+    CPPFLAGS += -DDEBUG
 else
-    CPPFLAGS += -DNDEBUGTIME -DNDEBUG
+    CPPFLAGS += -DNDEBUG
 endif
  
    

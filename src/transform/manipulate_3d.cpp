@@ -50,10 +50,6 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 	#ifdef DEBUG
 	long count_emitted = 0;
 	long count_bad = 0;
-	#endif
-
-
-	#ifdef DEBUGTIME
 	start_reading_data = clock();
 	#endif
 	
@@ -128,7 +124,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 
 		fields.clear();
 
-		#ifdef DEBUGTIME
+		#ifdef DEBUG
 		total_query_exec += clock() - start_query_exec;
 		start_reading_data = clock();
 		#endif
@@ -146,7 +142,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 int main(int argc, char **argv) {	
 	std::map<id_type, string> id_tiles;
 
-	char *cachefilename = "";
+	char *cachefilename = NULL;
 	if(argc < 2){
 		std::cerr<<"usage: manipulate /path/to/partition/file"<<std::endl;
 		return 0;

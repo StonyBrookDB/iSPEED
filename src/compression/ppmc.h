@@ -40,6 +40,4 @@
 #define SHMSZ     10000000000
 
 
-void init(struct query_op &stop, struct query_temp &sttemp);
-
 bool compress_data(std::string output_path, char* mapper_id, long join_id);

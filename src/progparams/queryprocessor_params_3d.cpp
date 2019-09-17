@@ -13,7 +13,6 @@ char nametemplate5[] = "/tmp/hadoopgisspaceXXXXXX";
 char nametemplate6[] = "/tmp/hadoopgiscompressXXXXXX";
 
 void init_params(struct framework_vars &fr_vars) {
-	fr_vars.loaded_1 = fr_vars.loaded_2 = false;
 	fr_vars.size_1 = fr_vars.size_2 = -1;
 	fr_vars.partition_method = "bsp";
 	fr_vars.partition_method_2 = "bsp";

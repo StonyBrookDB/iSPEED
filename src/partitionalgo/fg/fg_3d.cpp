@@ -9,9 +9,9 @@ int main(int argc, char** argv) {
 	cout.precision(15);
 	struct partition_op partop;
 	if (!extract_params_partitioning(argc, argv, partop)) {
-#ifdef DEBUG
+		#ifdef DEBUG
 		cerr << "Fail to extract parameters" << endl;
-#endif
+		#endif
 		return -1;
 	}
 
@@ -19,9 +19,9 @@ int main(int argc, char** argv) {
 		cerr << "Error reading input in" << endl;
 		return -1;
 	}
-#ifdef DEBUGTIME
+	#ifdef DEBUG
 	Timer t; 
-#endif
+	#endif
 
 	return 0;
 }

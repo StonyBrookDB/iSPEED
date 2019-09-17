@@ -162,11 +162,11 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	std::cerr << "Bucket info:[ID] |A|x|B|=|R|" <<std::endl;
 	#endif  
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	start_reading_data = clock();
 	#endif
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	time_t data_st, data_et;
 	double data_tt;
 	time(&data_st);
@@ -266,7 +266,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 		/* Process the current tile (bucket) when finishing reading all objects belonging
 		   to the current tile */
 		if (previd.compare(tile_id) != 0 && previd.size() > 0 ) {
-			#ifdef DEBUGTIME
+			#ifdef DEBUG
 			total_reading += clock() - start_reading_data;
 			start_query_exec = clock();
 			#endif
@@ -280,7 +280,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 			#endif
 
 
-			#ifdef DEBUGTIME
+			#ifdef DEBUG
 			total_query_exec += clock() - start_query_exec;
 			start_reading_data = clock();
 			#endif
@@ -305,7 +305,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 		fields.clear();
 	}
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	total_reading += clock() - start_reading_data;
 	start_query_exec = clock();
 	#endif
@@ -314,12 +314,12 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	sttemp.tile_id = tile_id;
 	int pairs = join_bucket(stop, sttemp); // number of satisfied predicates
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	total_query_exec += clock() - start_query_exec;
 	start_reading_data = clock();
 	#endif
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	time(&data_et);
 	data_tt = difftime(data_et,data_st);
 	std::cerr << "********************************************" << std::endl;
@@ -445,7 +445,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	#ifdef DEBUGTIME
+	#ifdef DEBUG
 	std::cerr << "Total reading time: " 
 		<< (double) total_reading / CLOCKS_PER_SEC 
 		<< " seconds." << std::endl;
