@@ -201,6 +201,8 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 	} // end of while
 
 	// output the overall space information
+	// TODO move the space information into the binary file
+	// and processed by the combine tool
 	std::cout << "SPACE" << TAB << "T" << TAB
 			  << space_low[0] << TAB << space_low[1] << TAB << space_low[2] << TAB
 			  << space_high[0] << TAB << space_high[1] << TAB << space_high[2] << TAB

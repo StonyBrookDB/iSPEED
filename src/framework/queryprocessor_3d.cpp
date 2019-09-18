@@ -50,9 +50,7 @@ int main(int argc, char** argv) {
 	time(&end_exec_time);
 	total_exec_time = difftime(end_exec_time,start_exec_time);
 	cerr << "********************************************" << endl;
-	cerr << "Total execution time: "
-		<< total_exec_time
-		<< " seconds." << endl;
+	cerr << "Total execution time: " << total_exec_time << " seconds." << endl;
 	cerr << "********************************************" << endl;
 	#endif
 
@@ -228,25 +226,21 @@ bool partition_data(string programpath, string input_path,
 	arr_args.push_back("-jobconf");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
 
-#ifdef DEBUG
+	#ifdef DEBUG
 	cerr << "Partitioning params: ";
 	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
 		cerr << *it << " ";
 	}
 	cerr << endl;
-#endif
+	#endif
 
 	int status = 0;
 	pid_t childpid;
 	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
-#ifdef DEBUG
 			cerr << "Succeeded in partitioning " << status << endl;
-#endif
 		} else {
-#ifdef DEBUG
 			cerr << "Failed in partitioning: " << status << endl;
-#endif
 			exit(1);
 		}
 		return status == 0 ? true : false;
@@ -324,43 +318,36 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	ss << MANIPULATE << " " << cachefilename;
 	arr_args.push_back(ss.str());
 
+	// the resque tool received mbbs for spatial join
 	arr_args.push_back("-reducer");
 	ss.str("");
 	ss << RESQUE
-			<< " --lod " <<  fr_vars.decomp_lod
-			<<" -j "<<fr_vars.join_cardinality
-			<<" -p "<<fr_vars.predicate;
+	   << " --lod " << fr_vars.decomp_lod
+	   <<" -j "<<fr_vars.join_cardinality
+	   <<" -p "<<fr_vars.predicate;
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
-	//arr_args.push_back("cat");
 
 	arr_args.push_back("-numReduceTasks");
 	arr_args.push_back(fr_vars.numreducers_str);
 
-	// mapper-only job
-	//arr_args.push_back("0");
-
 	arr_args.push_back("-jobconf");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
 
-#ifdef DEBUG
+	#ifdef DEBUG
 	cerr << "Executing spjoin program params: ";
 	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
 		cerr << *it << " ";
 	}
 	cerr << endl;
-#endif
+	#endif
 
 	int status = 0;
 	pid_t childpid;
 	if ((childpid = execute_command(programpath, arr_args))) {
 		if (wait(&status)) {
-#ifdef DEBUG
 			cerr << "Succeeded in sp join: " << status << endl;
-#endif
 		} else {
-#ifdef DEBUG
 			cerr << "Failed in sp join: " << status << endl;
-#endif
 			exit(1);
 		}
 		return status == 0 ? true : false;
@@ -422,7 +409,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		}
 	}
 
-	//// Retrieve the total space dimension
+	// Retrieve the total space dimension
 	int tmpfd = mkstemp(nametemplate);
 	char *tmpFile = nametemplate;
 	close(tmpfd);
@@ -430,13 +417,11 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	#ifdef DEBUG
 	cerr << "Temp file: " << tmpFile << endl;
 	#endif
-
 	// Create another file where you will write the content of all SPACE info paths into
 	// Getting min_x, min_y, min_z, max_z, max_y, max_z
 	// Obtain the cache file from hdfs
 	bool res_cat = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.space_path, tmpfd);
 	close(tmpfd);
-
 	read_space(tmpFile, fr_vars);
 	#ifdef DEBUG
 	cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB

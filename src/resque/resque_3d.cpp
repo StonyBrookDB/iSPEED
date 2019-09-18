@@ -29,114 +29,6 @@ clock_t start_query_exec;
 clock_t total_reading;
 clock_t total_query_exec;
 
-//Sc_Polyhedron* sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
-//	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-//	Sc_Polyhedron* geom;
-//	/*
-//	// moved to global vars
-//	int shmid;
-//    	key_t key;
-//    	char *shm, *s;
-//	*/
-//	/*
-//	int shmid;
-//	//use the same key to locate the segment.
-//	if ((shmid = shmget(COMPRESSION_KEY, SHMSZ, 0666)) < 0) {
-//		perror("shmget");
-//		exit(1);
-//	}
-//
-//	// Now we attach the segment to our data space.
-//	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
-//		perror("shmat");
-//		exit(1);
-//	}
-//	*/
-//	// Initialize parameters
-//	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-//
-//	#ifdef DEBUG
-//	std::cout << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
-//	#endif
-//	std::cerr << "sk_geometry: attempting to extract " << offset << TAB << length << std::endl;
-//	// Codec features status.
-//	bool b_useAdaptiveQuantization = false;
-//	bool b_useLiftingScheme = true;
-//	bool b_useCurvaturePrediction = true;
-//	bool b_useConnectivityPredictionFaces = true;
-//	bool b_useConnectivityPredictionEdges = true;
-//	bool b_allowConcaveFaces = true;
-//	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-//	unsigned i_quantBit = 12;
-//	//unsigned i_decompPercentage = 100;
-//
-//	// Init the random number generator.
-//	srand(4212);
-//	//std::cerr << "got to this part 1" << std::endl;
-//	//read the mesh:
-//
-//	// Never pass NULL to a std::string type parameter that uses a lazy initialization constructor :(
-//
-//	/*
-//	ifstream file("tmpData/failcompressed.pp3d", std::ios::binary | std::ios::ate);
-//	file.seekg(0, std::ios::beg);
-//
-//	char * fbuffer = new char[2000000];
-//        file.read(fbuffer,length);
-//    	for (size_t i = 0; i < length; ++i) {
-//		printf("%02X ", fbuffer[i]);
-//	}
-//	printf("\n");
-//	*/
-//	/*
-//	printf("resque shared buffer: ");
-//    	for (size_t i = 0; i < length; ++i) {
-//		printf("%02X ", resque_decomp_buffer[i]);
-//	}
-//	printf("\n");
-//	printf("shm current at offset  ");
-//    	for (size_t i = 0; i < length; ++i) {
-//		printf("%02X ", ((char*)(shm_ptr + offset))[i]);
-//	}
-//	printf("\n");
-//	*/
-//	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
-//				i_decompPercentage,
-//		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-//		             b_useLiftingScheme, b_useCurvaturePrediction,
-//		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-//		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-//				dummyoutputname,
-//				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-//				// fbuffer, length, resque_decomp_buffer);
-//		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
-//
-//	currentMesh->completeOperation();
-//
-//	// debug
-//
-//	//std::cerr << "current mesh: " << *currentMesh << std::endl;
-//	std::stringstream os;
-//	os << *currentMesh;
-//	//os.clear();
-//
-//	std::cerr << "done decomp" << std::endl;
-//	geom = new Sc_Polyhedron();
-//	os >> *geom;
-//	//std::cerr << "os: " << os.str() << std::endl;
-//
-//	// only when volume is needed
-//	//if (stop.needs_intersect_volume) {
-//		sttemp.poly_str[dataset_id].str(os.str());
-//	//}
-//
-//	//delete[] fbuffer;
-//	std::cerr << "constructing sk poly" << std::endl;
-//	//std::cerr << "geom: " << *geom << std::endl;
-//	delete currentMesh;
-//	return geom;
-//}
-
 // Performs spatial query on data stored in query_temp using operator query_op
 int execute_query(struct query_op &stop, struct query_temp &sttemp)
 {
@@ -160,105 +52,64 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 
 	#ifdef DEBUG
 	std::cerr << "Bucket info:[ID] |A|x|B|=|R|" <<std::endl;
-	#endif  
-
-	#ifdef DEBUG
 	start_reading_data = clock();
-	#endif
-
-	#ifdef DEBUG
 	time_t data_st, data_et;
 	double data_tt;
 	time(&data_st);
 	#endif
 
+	// each instance attach to the shared memory for
+	// the compressed objects
 	std::stringstream ss;
-	// with compressed data
 	int shmid;		
 	//use the same key to locate the segment.
 	size_t maxoffset2 = stop.shm_max_size;
-	//std::cerr << "max offset" << maxoffset2 << std::endl;
 	// Getting access to shared memory with all compressed objects stored in there
 	if ((shmid = shmget(COMPRESSION_KEY, maxoffset2, 0666)) < 0) {
 		perror("shmget");
 		exit(1);
 	}
-	//std::cerr << "maxoffset: " << maxoffset << std::endl;
 	// Now we attach the segment to our data space.
 	if ((shm_ptr = (char *) shmat(shmid, (const void *)NULL, 0)) == (char *) -1) {
 		perror("shmat");
 		exit(1);
 	}
-
-	/*printf("shm current at offset  ");
-        for (size_t i = 0; i < 1000; ++i) {
-                 printf("%02X ",  shm_ptr[i]);
-         }
-         printf("\n");*/
-
 	char *decomp_buffer =  new char[BUFFER_SIZE];
 	resque_decomp_buffer = decomp_buffer;
-	//std::cerr << "decomp_buffer" << (long) decomp_buffer << TAB << BUFFER_SIZE << std::endl;
-	//std::cerr << "decomp_buffer" << (long) resque_decomp_buffer << TAB << BUFFER_SIZE << std::endl;
 	
 	// Read line by line inputs
-	int tt = 0;
 	while (std::cin && getline(std::cin, input_line) && !std::cin.eof()) {
-#ifdef DEBUG
-		std::cerr<<tt++<<" line content:"<<input_line<<std::endl;
-#endif
+		// the input is in format (11 fields):
+		// partition_id dataset_id object_id mbbs*6 offset length
+		#ifdef DEBUG
+		std::cerr<<"line content:"<<input_line<<std::endl;
+		#endif
 		tokenize(input_line, fields, TAB, true);
-		if(fields.size()==0){//skip the empty lines
+		if(fields.size()!=11){//skip the corrupted lines
 			continue;
 		}
 	
+		/* Parsing fields from input */
 		tile_id = fields[0];
 		sid = atoi(fields[1].c_str());
-
-		/* Parsing fields from input */
 		try { 
 			// Parsing MBB
 			mbb_ptr = new struct mbb_3d();
 			for (int k = 0; k < NUMBER_DIMENSIONS; k++) {
-				//mbb_ptr->low[k] = stod(fields[3 + k]);
 				mbb_ptr->low[k] = std::atof(fields[3 + k].c_str());
 			}
 			for (int k = 0; k < NUMBER_DIMENSIONS; k++) {
-				//mbb_ptr->high[k] = stod(fields[6 + k]);
 				mbb_ptr->high[k] = std::atof(fields[6 + k].c_str());
 			}
-			#ifdef DEBUG
-			//compare with the input line to make sure the parsing process is correct
-			std::cerr << "MBB: ";
-			for (int k = 0; k < NUMBER_DIMENSIONS; k++) {
-				std::cerr << TAB << mbb_ptr->low[k];
-			}
-			for (int k = 0; k < NUMBER_DIMENSIONS; k++) {
-				std::cerr << TAB << mbb_ptr->high[k];
-			}
-			std::cerr << std::endl;
-			#endif
-		}
-		catch (...) {
+		} catch (...) {
 			std::cerr << "******MBB Parsing Error******" << std::endl;
 			return -1;
 		}
 		
 		try { 
-			// Parsing Geometry from shared memory segment
-			//poly = new Polyhedron();
-			//boost::replace_all(fields[9], BAR, "\n");
-			//ss.str(fields[9]);	
-			//std::cout << input_line << std::endl;
-			//ss >> *poly;
-//			std::cout << ss.str() << std::endl;
-			// extracting MBB information
-			// mbb_ptr = get_mbb(poly);
 			offset = atol(fields[9].c_str());
 			length = atol(fields[10].c_str());
-			//maxoffset = std::max(offset + length, maxoffset); // track the maximum offset that has been seen so far
-		}
-		catch (...) {
+		}catch (...) {
 			std::cerr << "******Offset and Length Parsing Error******" << std::endl;
 			return -1;
 		}
@@ -270,28 +121,21 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 			total_reading += clock() - start_reading_data;
 			start_query_exec = clock();
 			#endif
-			sttemp.tile_id = previd;
 			// Process the current tile in memory
+			sttemp.tile_id = previd;
 			int pairs = join_bucket(stop, sttemp); // number of satisfied predicates
 			#ifdef DEBUG
 			std::cerr <<"Special T[" << previd << "] |" << sttemp.mbbdata[SID_1].size()
-				<< "|x|" << sttemp.mbbdata[stop.sid_second_set].size()
-				<< "|=|" << pairs << "|" << std::endl;
-			#endif
-
-
-			#ifdef DEBUG
+					  << "|x|" << sttemp.mbbdata[stop.sid_second_set].size()
+				      << "|=|" << pairs << "|" << std::endl;
 			total_query_exec += clock() - start_query_exec;
 			start_reading_data = clock();
 			#endif
-
-
 			tile_counter++; 
 			release_mem(stop, sttemp, maxCardRelease);
 		}
 
 		// populate the bucket for join 
-		//sttemp.polydata[sid].push_back(poly);
 		sttemp.offsetdata[sid].push_back(offset);
 		sttemp.lengthdata[sid].push_back(length);
 		sttemp.mbbdata[sid].push_back(mbb_ptr);
@@ -317,9 +161,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	#ifdef DEBUG
 	total_query_exec += clock() - start_query_exec;
 	start_reading_data = clock();
-	#endif
-
-	#ifdef DEBUG
 	time(&data_et);
 	data_tt = difftime(data_et,data_st);
 	std::cerr << "********************************************" << std::endl;
@@ -331,16 +172,13 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 
 	#ifdef DEBUG
 	std::cerr <<"Special 2 T[" << previd << "] |" << sttemp.mbbdata[SID_1].size() << "|x|" 
-		<< sttemp.mbbdata[stop.sid_second_set].size() 
-		<< "|=|" << pairs << "|" << std::endl;
-
-	shmdt(shm_ptr);
+			  << sttemp.mbbdata[stop.sid_second_set].size()
+			  << "|=|" << pairs << "|" << std::endl;
 	#endif
 
+	shmdt(shm_ptr);
 	tile_counter++;
-
 	release_mem(stop, sttemp, stop.join_cardinality);
-	
 	// clean up newed objects
 	delete[] decomp_buffer;
 
@@ -371,7 +209,8 @@ void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) 
 }
 
 /* Create an R-tree index on a given set of polygons */
-bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::ISpatialIndex* & spidx, SpatialIndex::IStorageManager* & storage) {
+bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::ISpatialIndex* & spidx,
+		SpatialIndex::IStorageManager* & storage) {
 	// build spatial index on tile boundaries 
 	SpatialIndex::id_type  indexIdentifier;
 	CustomDataStream stream(&geom_mbbs);
