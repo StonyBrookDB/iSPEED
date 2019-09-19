@@ -81,7 +81,6 @@ struct framework_vars {
 	std::string hadoopldlibpath; // LD_LIBRARY_PATH on the system
 	bool overwritepath; // Overwrite HDFS directory if it already exists
 	int numreducers; // number of reducer
-	std::string numreducers_str; // number of reducers as a c string (for convenience)
 	std::string compressed_data_path;
 
 	struct space_info spinfo;
@@ -96,10 +95,6 @@ struct framework_vars {
 	int join_cardinality;
 	// 3d compression
 	int decomp_lod;
-	
-
-	double space_low[3];
-	double space_high[3];
 	
 	// Query variables
 	std::string output_path;

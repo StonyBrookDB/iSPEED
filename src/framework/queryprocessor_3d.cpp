@@ -15,8 +15,6 @@ int main(int argc, char** argv) {
 
 	
 	/* Initialize default values */
-	fr_vars.numreducers = 1;
-
 	init_params(fr_vars);
 
 	if (!extract_params(argc, argv, fr_vars)) {
@@ -185,12 +183,12 @@ bool partition_data(string programpath, string input_path,
 	ss.str("");
 	bucket_size = max(static_cast<int>(floor(bucket_size * samplerate)), 1);
 	ss  << partitionmethod << " -b " << bucket_size
-		<<" --min_x "<<fr_vars.space_low[0]
-		<<" --min_y "<<fr_vars.space_low[1]
-		<<" --min_z "<<fr_vars.space_low[2]
-		<<" --max_x "<<fr_vars.space_high[0]
-		<<" --max_y "<<fr_vars.space_high[1]
-		<<" --max_z "<<fr_vars.space_high[2];
+		<<" --min_x "<<fr_vars.spinfo.space_low[0]
+		<<" --min_y "<<fr_vars.spinfo.space_low[1]
+		<<" --min_z "<<fr_vars.spinfo.space_low[2]
+		<<" --max_x "<<fr_vars.spinfo.space_high[0]
+		<<" --max_y "<<fr_vars.spinfo.space_high[1]
+		<<" --max_z "<<fr_vars.spinfo.space_high[2];
 
 	arr_args.push_back(ss.str());
 
@@ -266,18 +264,10 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
 
 	arr_args.push_back("-numReduceTasks");
-	arr_args.push_back(fr_vars.numreducers_str);
+	arr_args.push_back(to_string(fr_vars.numreducers));
 
 	arr_args.push_back("-jobconf");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
-
-	#ifdef DEBUG
-	cerr << "Executing spjoin program params: ";
-	for(vector<string>::iterator it = arr_args.begin(); it != arr_args.end(); ++it) {
-		cerr << *it << " ";
-	}
-	cerr << endl;
-	#endif
 
 	int status = 0;
 	pid_t childpid;
@@ -363,14 +353,15 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	// from the combined binary file.
 	struct stat results;
 	if (stat(fr_vars.compressed_data_path.c_str(), &results) != 0 ||
-			results.st_size<6*sizeof(double)){
+			results.st_size<(6*sizeof(double)+sizeof(long))){
 		std::cerr<<"error reading compressed file "<<fr_vars.compressed_data_path<<std::endl;
 		exit(0);
 	}
 	int fd = open(fr_vars.compressed_data_path.c_str(), O_RDONLY);
-	lseek(fd,results.st_size-6*sizeof(double),SEEK_CUR);
-	read(fd,fr_vars.space_low,3*sizeof(double));
-	read(fd,fr_vars.space_high,3*sizeof(double));
+	lseek(fd,results.st_size-6*sizeof(double)-sizeof(long),SEEK_CUR);
+	read(fd,fr_vars.spinfo.space_low,3*sizeof(double));
+	read(fd,fr_vars.spinfo.space_high,3*sizeof(double));
+	read(fd,&fr_vars.spinfo.num_objects,sizeof(long));
 	close(fd);
 
 	/*
@@ -394,10 +385,8 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	}
 
 	// 1st step of partition the data to generate tile boundaries
-	#ifdef DEBUG
 	cerr << "Bucket size: " << fr_vars.bucket_size << endl;
 	cerr << "Sampling rate: " << fr_vars.sampling_rate << endl;
-	#endif
 
 	fr_vars.rough_bucket_size = fr_vars.bucket_size;
 	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
@@ -409,7 +398,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 			exit(1);
 		}
 	}
-	//generate a tmp file for storing the partition information
+	//generate a temporary file for storing the partition information
 	int tmpfd = mkstemp(nametemplate);
 	char *tmpFile = nametemplate;
 	close(tmpfd);
@@ -417,9 +406,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	bool res_partition = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout, tmpfd);
 	close(tmpfd);
 
-	#ifdef DEBUG
 	cerr << "Temp file name to hold partition boundary: " << tmpFile << endl;
-	#endif
 
 	// tmpFile contains partition index
 #ifdef DEBUGSTAT
@@ -466,10 +453,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		if (!sp_join(fr_vars.hadoopcmdpath, inputresque, fr_vars.joinoutputpath, fr_vars,
 					tmpFile)) {
 			cerr << "Failed spatial join" << endl;
-			// Remove cache file
-			//
-			//  Keep it for now
-			// remove(tmpFile);
+			remove(tmpFile);
 			exit(1);
 		}
 	}

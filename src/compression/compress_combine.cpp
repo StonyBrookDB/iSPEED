@@ -114,7 +114,6 @@ int main(int argc, char** argv) {
 	stringstream ss;
 	// Read standard input
 	while (cin && getline(cin, input_line) && !cin.eof()) {
-		cerr << input_line<<endl;
 		//input format
 		//mapper_id obj_id dataset_id mbb*6 length
 		
@@ -151,10 +150,12 @@ int main(int argc, char** argv) {
 			int size = inFile.tellg();
 			inFile.seekg(0, ios::beg);
 			char *rd_buffer = new char[size];
-			inFile.read(rd_buffer, size-6*sizeof(double));
+			int objects_size = size-6*sizeof(double);
+			inFile.read(rd_buffer, objects_size);
 			//read and update the space low and high information
 			inFile.read((char *)low_buf, 3*sizeof(double));
 			inFile.read((char *)high_buf, 3*sizeof(double));
+
 			for(int j=0;j<3;j++){
 				if(low_buf[j]<space_low[j]){
 					space_low[j] = low_buf[j];
@@ -163,7 +164,7 @@ int main(int argc, char** argv) {
 					space_high[j] = high_buf[j];
 				}
 			}
-			finalFile.write(rd_buffer, size-6*sizeof(double));
+			finalFile.write(rd_buffer, objects_size);
 			delete(rd_buffer);
 		}
 		prev_id = mapper_id;
@@ -185,10 +186,12 @@ int main(int argc, char** argv) {
 		int size = inFile.tellg();
 		inFile.seekg(0, ios::beg);
 		char *rd_buffer = new char[size];
-		inFile.read(rd_buffer, size-6*sizeof(double));
+		int objects_size = size-6*sizeof(double);
+		inFile.read(rd_buffer, objects_size);
 		//read and update the space low and high information
 		inFile.read((char *)low_buf, 3*sizeof(double));
 		inFile.read((char *)high_buf, 3*sizeof(double));
+
 		for(int j=0;j<3;j++){
 			if(low_buf[j]<space_low[j]){
 				space_low[j] = low_buf[j];
@@ -197,22 +200,22 @@ int main(int argc, char** argv) {
 				space_high[j] = high_buf[j];
 			}
 		}
-		finalFile.write(rd_buffer, size-6*sizeof(double));
+		finalFile.write(rd_buffer, objects_size);
 		delete(rd_buffer);
 	}
 
 	//attach the global space mbb to the file
 	finalFile.write((char *)space_low, 3*sizeof(double));
 	finalFile.write((char *)space_high, 3*sizeof(double));
+	finalFile.write((char *)&count_objects, sizeof(long));
+
 
 	//cleaning
 	finalFile.flush();
 	finalFile.close();
 
-	#ifdef DEBUG
 	cerr << "processed:	"<<count_objects<<endl;
 	cerr << "total size is:	"<<offset << endl; // the total size
-	#endif
 	return true;
 }
 

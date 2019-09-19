@@ -24,6 +24,7 @@ void init_params(struct framework_vars &fr_vars) {
 	fr_vars.rough_bucket_size = -1;
 	fr_vars.overwritepath = false;
 	fr_vars.decomp_lod = 100;
+	fr_vars.numreducers = 1;
 }
 
 
@@ -68,6 +69,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		po::variables_map vm;        
 		po::store(po::parse_command_line(argc, argv, desc), vm);
 		po::notify(vm);   
+
 		if (vm.count("help") || !vm.count("querytype") ) {
 			cerr << desc << endl;
 			return 0;
@@ -175,17 +177,6 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		fr_vars.hadoopgis_prefix = binpath + SLASH;
 		#ifdef DEBUG
 		cerr << "Hadoop commands path:" << fr_vars.hadoopcmdpath  << endl;
-		#endif
-
-
-		// Common parameter strings for program inside the same 
-		stringstream tmpss;
-
-		// Update number of reducers
-		tmpss.str("");
-		tmpss << fr_vars.numreducers;
-		fr_vars.numreducers_str = tmpss.str();
-		#ifdef DEBUG
 		cerr << "Number reducers: " << fr_vars.numreducers << endl;
 		#endif
 

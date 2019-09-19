@@ -124,13 +124,11 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 			// Process the current tile in memory
 			sttemp.tile_id = previd;
 			int pairs = join_bucket(stop, sttemp); // number of satisfied predicates
-			#ifdef DEBUG
 			std::cerr <<"Special T[" << previd << "] |" << sttemp.mbbdata[SID_1].size()
 					  << "|x|" << sttemp.mbbdata[stop.sid_second_set].size()
 				      << "|=|" << pairs << "|" << std::endl;
 			total_query_exec += clock() - start_query_exec;
 			start_reading_data = clock();
-			#endif
 			tile_counter++; 
 			release_mem(stop, sttemp, maxCardRelease);
 		}

@@ -53,8 +53,9 @@ Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercenta
 	std::stringstream os;
 	os << *currentMesh;
 	//os.clear();
-
+	#ifdef DEBUG
 	std::cerr << "done decomp" << std::endl;
+	#endif
 	geom = new Polyhedron();
 	os >> *geom;
 	//std::cerr << "os: " << os.str() << std::endl;
@@ -222,9 +223,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				//std::cout << i << TAB << vis.matches[j] << std::endl;
 				#ifdef DEBUG
 				std::cerr << "Checking actual intersection between " << i << TAB << vis.matches[j] << std::endl;
-				#endif
-
-				#ifdef DEBUG
 				time_t geometry_st, geometry_et;
 				double geometry_tt;
 				time(&geometry_st);
@@ -232,14 +230,15 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 				if (join_with_predicate(stop, sttemp, geom1, geom2, env1, env2,
 							stop.join_predicate))  {
-					//std::cerr << i << TAB << vis.matches[j] << std::endl;
 					//	report_result(stop, sttemp, i, vis.matches[j]);
-					//	std::cout << i << TAB << vis.matches[j] << << sttemp. <<std::endl;
-
 					#ifdef DEBUG
 					std::cerr << "Actual intersected with each other " << i << TAB << vis.matches[j] << std::endl;
 					#endif
 					pairs++;
+				}else{
+					#ifdef DEBUG
+					std::cerr << "not intersected with each other " << i << TAB << vis.matches[j] << std::endl;
+					#endif
 				}
 
 				#ifdef DEBUG

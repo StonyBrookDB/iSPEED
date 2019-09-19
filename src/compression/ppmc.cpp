@@ -99,10 +99,8 @@ int main(int argc, char** argv) {
 bool compress_data( std::string output_path, char* mapper_id, long join_id){
 
 	MyMesh *currentMesh = NULL;
-	long count_objects = -1;
 	long obj_id = 0;
 	std::string input_line; // Temporary line
-	std::vector<std::string> fields; // Temporary fields
 	std::stringstream ss;
 	
 	int i_mode = COMPRESSION_MODE_ID; // compression mode
@@ -139,17 +137,13 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
    	}
 	char *currentPos = buffer;
 	while (std::cin && getline(std::cin, input_line) && !std::cin.eof()) {
-		// the input format is "ID	OFF|numbers|numbers|...."
+		// the input format is "OFF|numbers|numbers|...."
 		// return character in OFF file is replaced with bar "|"
-
-		tokenize(input_line, fields, TAB, true);
-		std::stringstream ss_obj(fields[0]);
-		ss_obj >> obj_id;
 
 		/* Parsing polyhedron input */
 		try {
 			// convert it back to a normal OFF format
-			boost::replace_all(fields[1], BAR, "\n");
+			boost::replace_all(input_line, BAR, "\n");
 			// Init the random number generator.
 			srand(4212);
 			//read the mesh:
@@ -159,7 +153,7 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 					     b_useLiftingScheme, b_useCurvaturePrediction,
 					     b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
 					     b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-					     fields[1], NULL, 0, meshbuffer);
+					     input_line, NULL, 0, meshbuffer);
 			currentMesh->completeOperation();
 			
 			// output the mbb information
@@ -195,9 +189,8 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 			return -1;
 		}
 	
-		fields.clear();
 		delete currentMesh;
-		count_objects++;
+		obj_id++;
 	} // end of while
 	
 	// write the compressed data
@@ -224,7 +217,7 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
     delete[] meshbuffer;
 
 	#ifdef DEBUG
-    std::cerr <<"processed "<<count_objects<<" objects"<<endl;
+    std::cerr <<"processed "<<obj_id<<" objects"<<endl;
 	std::cerr <<"total size of compressed data is "<<offset << std::endl; // the total size
 	#endif
 

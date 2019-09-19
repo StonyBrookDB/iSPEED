@@ -83,14 +83,9 @@ pid_t execute_command(string programpath, vector<string> &strargs, int outputfd)
 		int i;
 		for (i = 0; i < strargs.size(); i++) {
 			args[i] = (char *) strargs[i].c_str();
-
-			#ifdef DEBUG
 			cerr << args[i] << SPACE;
-			#endif
 		}
-		#ifdef DEBUG
 		cerr << endl;
-		#endif
 		args[i] = (char *) NULL;
 
 		// Execute the program
