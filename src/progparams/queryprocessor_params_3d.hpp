@@ -82,6 +82,7 @@ struct framework_vars {
 	bool overwritepath; // Overwrite HDFS directory if it already exists
 	int numreducers; // number of reducer
 	std::string numreducers_str; // number of reducers as a c string (for convenience)
+	std::string compressed_data_path;
 
 	struct space_info spinfo;
 
@@ -97,9 +98,10 @@ struct framework_vars {
 	int decomp_lod;
 	
 
+	double space_low[3];
+	double space_high[3];
 	
 	// Query variables
-	std::string output_fields;
 	std::string output_path;
 	std::string query_type;
 	std::string predicate;

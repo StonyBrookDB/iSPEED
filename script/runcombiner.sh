@@ -40,8 +40,8 @@ done
 
 # getting the total/global index
 echo "combining the compression results"
-echo "hdfs dfs -cat $1_mbb/0/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}"
-hdfs dfs -cat "$1""_mbb/0/*" | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}
+echo "hdfs dfs -cat $1_mbb/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}"
+hdfs dfs -cat $1_mbb/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}
 echo "done"
 
 #remove the temporary files

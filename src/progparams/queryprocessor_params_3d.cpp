@@ -43,9 +43,6 @@ bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
 			("mbb1", po::value<string>(&fr_vars.mbb_path_1), "HDFS path to MBBs of data set 1")
 			("mbb2", po::value<string>(&fr_vars.mbb_path_2), "HDFS path to MBBs of data set 2")
 			("distance,d", po::value<double>(&fr_vars.distance), "Distance (used for certain predicates)")
-			("outputfields,f", po::value<string>(&fr_vars.output_fields), "Fields to be included in the final output \
-separated by commas. See the full documentation. Regular fields from datasets are in the format datasetnum:fieldnum, e.g. 1:1,2:3,1:14. \
-Field counting starts from 1. Optional statistics include: area1, area2, union, intersect, jaccard, dice, mindist")
 			("outputpath,h", po::value<string>(&fr_vars.output_path), "Output path")
 			("containfile", po::value<string>(&fr_vars.user_file), "User file containing window used for containment query")
 			("containrange", po::value<string>(&fr_vars.containment_window), "Comma separated list of window used for containemtn query")
@@ -66,6 +63,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 			("spatialproc", "Runs the code from partitioning till the end of spatial processing")
 			("decomplod", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
 			("binpath",po::value<string>(&binpath), "path to the binary executables")
+			("compressed_data_path",po::value<string>(&fr_vars.compressed_data_path), "path to the combined compressed spatial data")
 			;
 		po::variables_map vm;        
 		po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -229,14 +227,7 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 	tmpss << fr_vars.output_path << "_mbb/0";
 	// string mbb_path = mbb_output + "/0";
 	fr_vars.mbb_path = tmpss.str(); // subdirectory of mbb_output
-	
-	
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_mbb/SPACE/part-*";
-	//string space_path = "/SPACE/part-*";
-	fr_vars.space_path = tmpss.str(); // subdirectory of mbb_output
-	
-	
+
 	tmpss.str("");
 	tmpss << fr_vars.output_path << "_mbb2";
 	fr_vars.mbb_output2 = tmpss.str();

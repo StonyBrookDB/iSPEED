@@ -41,7 +41,7 @@ bool extract_dims(string programpath, string input_path, string output_path, str
 bool extract_mbb(string programpath, vector<string> &input_paths,
   string output_path, string original_params, struct framework_vars &fr_vars);
 
-void read_space(char *filename, struct framework_vars &fr_vars);
+//void read_space(char *filename, struct framework_vars &fr_vars);
 
 bool extract_skeleton(string programpath, string input_path_2,
   string output_path, struct framework_vars &fr_vars);
@@ -49,8 +49,7 @@ bool build_voronoi(char *input, char *output, struct framework_vars &fr_vars);
 
 bool partition_data(string programpath, string input_path, 
 	string output_path, string partitionmethod, int bucket_size, 
-	int step, double samplerate, struct framework_vars &fr_vars,
-	char *cachefilefullpath = NULL);
+	double samplerate, struct framework_vars &fr_vars);
  
 bool collect_stat(string hadoopcmdpath, string input_path, string output_path, 
 	string sharedparams, struct framework_vars &fr_vars, char *tmpnameonly, char *tmpFile);

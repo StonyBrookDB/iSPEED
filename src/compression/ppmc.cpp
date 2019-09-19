@@ -21,6 +21,16 @@
 using namespace CGAL;
 using namespace std;
 
+/*
+ * ppmc takes objects from standard in
+ * compress them to a binary file, and output the offset
+ * and length information together with the MBB information
+ * of each object to the standard out.
+ * note that, the mbb information for all the objects processed
+ * by this instance will also be attached to the end of the binary file
+ *
+ * */
+
 int main(int argc, char** argv) {
 
 	if(argc<2){
@@ -112,17 +122,17 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 	double tmp_x, tmp_y, tmp_z;
 	double low[3];
 	double high[3];
-	bool firstLineRead = false;
+
 	/* Space info */
-	double space_low[3];
-	double space_high[3];
+	double space_low[3] = {DBL_MAX,DBL_MAX,DBL_MAX};
+	double space_high[3] = {0,0,0};
 
 
 	// output binary file for the compressed data
 	int offset = 0;
 	//ofstream myFile (output_path, ios::out | ios::binary);
 	int count = 0;
-	char *buffer = new char[20000000];
+	char *buffer = new char[20*1024*1024];
 	char *meshbuffer = new char[BUFFER_SIZE];
     for (size_t i = 0; i < BUFFER_SIZE; ++i) {
     	meshbuffer[i] = 0;
@@ -133,8 +143,8 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 		// return character in OFF file is replaced with bar "|"
 
 		tokenize(input_line, fields, TAB, true);
-		std::stringstream buffer(fields[0]);
-		buffer >> obj_id;
+		std::stringstream ss_obj(fields[0]);
+		ss_obj >> obj_id;
 
 		/* Parsing polyhedron input */
 		try {
@@ -153,9 +163,7 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 			currentMesh->completeOperation();
 			
 			// output the mbb information
-			// note that the first letter "0", same as the word "SPACE"
-			// below, is the folder for this specific output
-			std::cout << "0" << TAB <<  mapper_id << TAB << obj_id << TAB << join_id
+			std::cout << mapper_id << TAB << obj_id << TAB << join_id
 					  << TAB << currentMesh->bbMin0.x() << TAB << currentMesh->bbMin0.y() << TAB << currentMesh->bbMin0.z()
 					  << TAB << currentMesh->bbMax0.x() << TAB << currentMesh->bbMax0.y() << TAB << currentMesh->bbMax0.z()
 					  << TAB << offset << TAB << currentMesh->dataOffset << std::endl; // offset is the beginning point of this object
@@ -166,30 +174,22 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 
 			// compute offset for next object
 			offset += currentMesh->dataOffset;
-
-			// Get or update the space info
+			assert(offset < 20*1024*1024 &&
+					"the total size of compressed binary "
+					"file should be smaller than 20MB");
+			//update the space info
 			low[0] = currentMesh->bbMin0.x();
 			low[1] = currentMesh->bbMin0.y();
 			low[2] = currentMesh->bbMin0.z();
 			high[0] = currentMesh->bbMax0.x();
 			high[1] = currentMesh->bbMax0.y();
 			high[2] = currentMesh->bbMax0.z();
-			if (!firstLineRead) {
-				space_low[0] = low[0];
-				space_low[1] = low[1];
-				space_low[2] = low[2];
-				space_high[0] = high[0];
-				space_high[1] = high[1];
-				space_high[2] = high[2];
-				firstLineRead = true;
-			} else {
-				space_low[0] = low[0] < space_low[0] ? low[0] : space_low[0];
-				space_low[1] = low[1] < space_low[1] ? low[1] : space_low[1];
-				space_low[2] = low[2] < space_low[2] ? low[2] : space_low[2];
-				space_high[0] = high[0] > space_high[0] ? high[0] : space_high[0];
-				space_high[1] = high[1] > space_high[1] ? high[1] : space_high[1];
-				space_high[2] = high[2] > space_high[2] ? high[2] : space_high[2];
-			}
+			space_low[0] = low[0] < space_low[0] ? low[0] : space_low[0];
+			space_low[1] = low[1] < space_low[1] ? low[1] : space_low[1];
+			space_low[2] = low[2] < space_low[2] ? low[2] : space_low[2];
+			space_high[0] = high[0] > space_high[0] ? high[0] : space_high[0];
+			space_high[1] = high[1] > space_high[1] ? high[1] : space_high[1];
+			space_high[2] = high[2] > space_high[2] ? high[2] : space_high[2];
 		} catch (...) {
 			std::cerr << "******Geometry Parsing Error******" << std::endl;
 			return -1;
@@ -199,14 +199,6 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 		delete currentMesh;
 		count_objects++;
 	} // end of while
-
-	// output the overall space information
-	// TODO move the space information into the binary file
-	// and processed by the combine tool
-	std::cout << "SPACE" << TAB << "T" << TAB
-			  << space_low[0] << TAB << space_low[1] << TAB << space_low[2] << TAB
-			  << space_high[0] << TAB << space_high[1] << TAB << space_high[2] << TAB
-			  << count_objects << std::endl;
 	
 	// write the compressed data
 	const char *cstr = output_path.c_str();
@@ -221,6 +213,11 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 	if (offset > 0 && wridx < offset) {
 		myFile.write( (buffer + wridx), offset % amt);
 	}
+	// output the overall space information
+	myFile.write((char *)space_low, 3*sizeof(double));
+	myFile.write((char *)space_high, 3*sizeof(double));
+
+	myFile.flush();
 	myFile.close();
 
 	delete[] buffer;

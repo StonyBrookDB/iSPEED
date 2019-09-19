@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 	if ((shm = (char *) shmat(shmid, NULL, 0)) == (char *) -1) {
 		perror("shmat");
 		exit(1);
-	}    
+	}
 
 	if (file.read(shm, size)) {
 		#ifdef DEBUG

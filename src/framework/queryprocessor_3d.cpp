@@ -112,11 +112,6 @@ bool compress_data(string programpath, vector<string> &input_paths,
 	
 	arr_args.push_back("-D");
 	arr_args.push_back("mapreduce.task.timeout=36000000");
-
-	arr_args.push_back("-libjars");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + CUSTOM_JAR_REL_PATH);
-	arr_args.push_back("-outputformat");
-	arr_args.push_back("com.custom.CustomMultiOutputFormat");
 	
 	for(vector<string>::iterator it = input_paths.begin() ; it != input_paths.end(); ++it) {
 		arr_args.push_back("-input");
@@ -165,10 +160,8 @@ bool compress_data(string programpath, vector<string> &input_paths,
 
 bool partition_data(string programpath, string input_path,
 	string output_path, string partitionmethod, int bucket_size,
-	int step, double samplerate, struct framework_vars &fr_vars,
-	char *cachefilefullpath) {
-	char *cachefilename = strrchr(cachefilefullpath, '/'); // pointing to just the name of the cache file
-	cachefilename++;
+	double samplerate, struct framework_vars &fr_vars) {
+
 	hdfs_delete(programpath, output_path);
 	stringstream ss;
 	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
@@ -179,48 +172,30 @@ bool partition_data(string programpath, string input_path,
 	arr_args.push_back(output_path);
 
 	arr_args.push_back("-file");
-	if (step == 1) {
-		// For first step in partitioning
-		arr_args.push_back(fr_vars.hadoopgis_prefix + MBB_SAMPLER);
-	} else {
-		// For 2nd step in partitioning
-		arr_args.push_back(fr_vars.hadoopgis_prefix + MANIPULATE);
-	}
+	arr_args.push_back(fr_vars.hadoopgis_prefix + MBB_SAMPLER);
 	arr_args.push_back("-file");
 	arr_args.push_back(fr_vars.hadoopgis_prefix + partitionmethod);
 
-	if (cachefilename != NULL) {
-		string strtmp(cachefilefullpath);
-		arr_args.push_back("-file");
-		arr_args.push_back(strtmp);
-	}
-
 	arr_args.push_back("-mapper");
 	ss.str("");
-	if (step == 1) {
-		ss << MBB_SAMPLER << " " << samplerate;
-	} else {
-		ss << MANIPULATE << " " << cachefilename ;
-		// no more mbb only mode	<< " -c " << cachefilename << " -m";
-	}
+	ss << MBB_SAMPLER << " " << samplerate;
 	arr_args.push_back(ss.str());
 
 	arr_args.push_back("-reducer");
 	ss.str("");
 	bucket_size = max(static_cast<int>(floor(bucket_size * samplerate)), 1);
-	ss << partitionmethod << " -b " << bucket_size;
-	if (cachefilename != NULL) {
-		ss << " -c " << cachefilename;
-	}
+	ss  << partitionmethod << " -b " << bucket_size
+		<<" --min_x "<<fr_vars.space_low[0]
+		<<" --min_y "<<fr_vars.space_low[1]
+		<<" --min_z "<<fr_vars.space_low[2]
+		<<" --max_x "<<fr_vars.space_high[0]
+		<<" --max_y "<<fr_vars.space_high[1]
+		<<" --max_z "<<fr_vars.space_high[2];
+
 	arr_args.push_back(ss.str());
 
 	arr_args.push_back("-numReduceTasks");
-	if (step == 1) {
-		arr_args.push_back("1");
-	} else {
-		//arr_args.push_back("0");
-		arr_args.push_back(fr_vars.numreducers_str);
-	}
+	arr_args.push_back("1");
 	//arr_args.push_back(numreducers_str);
 
 	arr_args.push_back("-jobconf");
@@ -247,43 +222,6 @@ bool partition_data(string programpath, string input_path,
 	}
 	return false;
 }
-
-// Read and combine all space info files
-void read_space(char *filename, struct framework_vars &fr_vars) {
-	string input_line;
-	vector<string> fields;
-	int pos = 0;
-	bool firstLine = true;
-	ifstream file(filename);
-	int offset = 1;
-	fr_vars.spinfo.num_objects = 0;
-	while(getline(file, input_line)) {
-		tokenize(input_line, fields, TAB, true);
-		if (!firstLine) {
-			fr_vars.spinfo.space_low[0] = min(fr_vars.spinfo.space_low[0], atof(fields[offset].c_str()));
-			fr_vars.spinfo.space_low[1] = min(fr_vars.spinfo.space_low[1], atof(fields[offset + 1].c_str()));
-			fr_vars.spinfo.space_low[2] = min(fr_vars.spinfo.space_low[2], atof(fields[offset + 2].c_str()));
-			fr_vars.spinfo.space_high[0] = max(fr_vars.spinfo.space_high[0], atof(fields[offset + 3].c_str()));
-			fr_vars.spinfo.space_high[1] = max(fr_vars.spinfo.space_high[1], atof(fields[offset + 4].c_str()));
-			fr_vars.spinfo.space_high[2] = max(fr_vars.spinfo.space_high[2], atof(fields[offset + 5].c_str()));
-			fr_vars.spinfo.num_objects += atol(fields[offset + 6].c_str());
-		} else {
-			// First line
-			firstLine = false;
-			fr_vars.spinfo.space_low[0] = atof(fields[offset].c_str());
-			fr_vars.spinfo.space_low[1] = atof(fields[offset + 1].c_str());
-			fr_vars.spinfo.space_low[2] = atof(fields[offset + 2].c_str());
-			fr_vars.spinfo.space_high[0] = atof(fields[offset + 3].c_str());
-			fr_vars.spinfo.space_high[1] = atof(fields[offset + 4].c_str());
-			fr_vars.spinfo.space_high[2] = atof(fields[offset + 5].c_str());
-			fr_vars.spinfo.num_objects += atol(fields[offset + 6].c_str());
-		}	
-		fields.clear();
-	}
-	file.close();
-}
-
-
 
 bool sp_join(string programpath, vector<string> &input_paths,
 		string output_path, struct framework_vars &fr_vars,
@@ -409,37 +347,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		}
 	}
 
-	// Retrieve the total space dimension
-	int tmpfd = mkstemp(nametemplate);
-	char *tmpFile = nametemplate;
-	close(tmpfd);
-	tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
-	#ifdef DEBUG
-	cerr << "Temp file: " << tmpFile << endl;
-	#endif
-	// Create another file where you will write the content of all SPACE info paths into
-	// Getting min_x, min_y, min_z, max_z, max_y, max_z
-	// Obtain the cache file from hdfs
-	bool res_cat = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.space_path, tmpfd);
-	close(tmpfd);
-	read_space(tmpFile, fr_vars);
-	#ifdef DEBUG
-	cerr << "Space dimensions: " << fr_vars.spinfo.space_low[0] << TAB
-		 << fr_vars.spinfo.space_low[1] << TAB << fr_vars.spinfo.space_low[2] << TAB
-		 << fr_vars.spinfo.space_high[0] << TAB << fr_vars.spinfo.space_high[1] << TAB
-		 << fr_vars.spinfo.space_high[2] << endl;
-	cerr << "Number objects: " << fr_vars.spinfo.num_objects << endl;
-	#endif
-	std::ofstream ofs;
-	ofs.open (tmpFile, std::ofstream::out | std::ofstream::trunc);
-	ofs << "T" << TAB
-		<< fr_vars.spinfo.space_low[0] << TAB << fr_vars.spinfo.space_low[1] << TAB
-		<< fr_vars.spinfo.space_low[2] << TAB << fr_vars.spinfo.space_high[0] << TAB
-		<< fr_vars.spinfo.space_high[1] << TAB << fr_vars.spinfo.space_high[2] << TAB
-		<< fr_vars.spinfo.num_objects << endl;
-	ofs.close();
-
-	// Saving those info into a struct that gets passed along query parameters into sequential steps
+	// do the compression
 	if (fr_vars.comp_mode) {
 		// stop the program before running combiners
 		cerr << "Done with compression" << endl;
@@ -451,11 +359,26 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	 *    to load the compressed data into a shared memory
 	 * */
 
+	// we assume the combiner already been executed and the space information can be retrieved
+	// from the combined binary file.
+	struct stat results;
+	if (stat(fr_vars.compressed_data_path.c_str(), &results) != 0 ||
+			results.st_size<6*sizeof(double)){
+		std::cerr<<"error reading compressed file "<<fr_vars.compressed_data_path<<std::endl;
+		exit(0);
+	}
+	int fd = open(fr_vars.compressed_data_path.c_str(), O_RDONLY);
+	lseek(fd,results.st_size-6*sizeof(double),SEEK_CUR);
+	read(fd,fr_vars.space_low,3*sizeof(double));
+	read(fd,fr_vars.space_high,3*sizeof(double));
+	close(fd);
 
 	/*
 	 * 3: do the real spatial join in the third phase
 	 *
 	 * */
+
+
 	string allmbbspath = fr_vars.output_path + "_inputresque";
 	vector<string> inputresque;
 	inputresque.push_back(allmbbspath);
@@ -476,49 +399,20 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	cerr << "Sampling rate: " << fr_vars.sampling_rate << endl;
 	#endif
 
-	if (!fr_vars.para_partition) {
-		fr_vars.rough_bucket_size = fr_vars.bucket_size;
-		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
-			#ifdef DEBUG
-			cerr << "\nPartitioning 1st steps\n" << endl;
-			#endif
-			// MapReduce partitioning happens here
-			if (!partition_data(fr_vars.hadoopcmdpath, allmbbspath,
-						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.bucket_size,
-						1, fr_vars.sampling_rate, fr_vars, tmpFile)) {
-				cerr << "Failed partitioning 1st step" << endl;
-				// Remove cache file
-				remove(tmpFile);
-				exit(1);
-			}
-		}
-	} else {
-		if (fr_vars.rough_bucket_size == -1) {
-			// Rough bucket size has not been set
-			if (fr_vars.numreducers > 0) {
-				fr_vars.rough_bucket_size = max(static_cast<int>(floor(fr_vars.spinfo.num_objects
-								/ fr_vars.numreducers / 2)), 1);
-			} else {
-				fr_vars.rough_bucket_size = max(static_cast<int>(floor(fr_vars.spinfo.num_objects
-								/ 2)), 1);
-			}
-		}
-		cerr << "Rough bucket size: " << fr_vars.rough_bucket_size << endl;
-		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
-			#ifdef DEBUG
-			cerr << "\n\nPartitioning 1st step\n" << endl;
-			#endif
-			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
-						fr_vars.partitionpath, fr_vars.partition_method, fr_vars.rough_bucket_size,
-						1, fr_vars.sampling_rate, fr_vars, tmpFile)) {
-				cerr << "Failed partitioning 1st step" << endl;
-				// Remove cache file
-				remove(tmpFile);
-				exit(1);
-			}
+	fr_vars.rough_bucket_size = fr_vars.bucket_size;
+	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
+		// MapReduce partitioning happens here
+		if (!partition_data(fr_vars.hadoopcmdpath, allmbbspath,
+					fr_vars.partitionpath, fr_vars.partition_method, fr_vars.bucket_size,
+					fr_vars.sampling_rate, fr_vars)) {
+			cerr << "Failed partitioning 1st step" << endl;
+			exit(1);
 		}
 	}
-	// Obtain the cache file from hdfs
+	//generate a tmp file for storing the partition information
+	int tmpfd = mkstemp(nametemplate);
+	char *tmpFile = nametemplate;
+	close(tmpfd);
 	tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
 	bool res_partition = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout, tmpfd);
 	close(tmpfd);
@@ -526,27 +420,6 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	#ifdef DEBUG
 	cerr << "Temp file name to hold partition boundary: " << tmpFile << endl;
 	#endif
-
-	if (fr_vars.para_partition) {
-		// Second round of partitioning
-		#ifdef DEBUG
-		cerr << "\n\nPartitioning 2nd steps\n" << endl;
-		#endif
-		if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath2)) {
-			if (!partition_data(fr_vars.hadoopcmdpath, fr_vars.mbb_path,
-						fr_vars.partitionpath2, fr_vars.partition_method_2, fr_vars.bucket_size,
-						2, 1, fr_vars, tmpFile)) {
-				cerr << "Failed partitioning 2nd step" << endl;
-				// Remove cache file
-				remove(tmpFile);
-				exit(1);
-			}
-		}
-		// Update/Overwrite the tmp file
-		tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
-		bool res_partition_2 = hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout2, tmpfd);
-		close(tmpfd);
-	}
 
 	// tmpFile contains partition index
 #ifdef DEBUGSTAT
