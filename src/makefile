@@ -93,7 +93,6 @@ install:
 	mkdir ${builddir} && \
 	mkdir ${bindir} && \
 	mkdir ${libdir} && \
-	cp mapreducejava/myCustomLibs.jar ${libdir} && \
 	cp ../script/* ${bindir}/
 
 clean:
