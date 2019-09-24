@@ -215,7 +215,6 @@ struct query_op {
 	std::map<int, long> count_tiles; // mapping of actual geomery index for tiles
 
 	/* Reducing-specific - RESQUE */
-	int offset; // offset/adjustment for meta data field in RESQUE
 	std::vector<int> proj1; /* Output fields for 1st set  */
 	std::vector<int> proj2; /* Output fields for 2nd set */
 

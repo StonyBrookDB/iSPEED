@@ -259,7 +259,6 @@ bool extract_params(int argc, char** argv, struct query_op &stop, struct query_t
 	// Adjusting the actual geometry field (shift) to account
 	//   for tile_id and join_index
 	#ifdef DEBUG
-	std::cerr << "Offset:  " << stop.offset << std::endl;
     std::cerr << "join cardinality: " << stop.join_cardinality << std::endl;
 	#endif
 

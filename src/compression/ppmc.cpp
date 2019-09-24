@@ -50,15 +50,21 @@ int main(int argc, char** argv) {
 	 *  For testing locally, set/export the environment variable above */
 	if (!stdin_file_name) {
 		#ifdef DEBUG
+		std::cerr << "Environment variable mapreduce_map_input_file is not set, use "<< argv[1] << std::endl;
+		stdin_file_name = argv[1];
+		#else
 		std::cerr << "Environment variable mapreduce_map_input_file is not set correctly." << std::endl;
-		#endif
 		return -1;
+		#endif
 	}
 	if(!mapper_id){
 		#ifdef DEBUG
+		std::cerr << "Environment variable mapreduce_task_id is not set use 0." << std::endl;
+		mapper_id = (char *)"0";
+		#else
 		std::cerr << "Environment variable mapreduce_task_id is not set correctly." << std::endl;
-		#endif
 		return -1;
+		#endif
 	}
 	#ifdef DEBUG
 	std::cerr <<"stdin file name: "<< stdin_file_name<<"\nmapper_id:" <<mapper_id<< std::endl;
@@ -71,9 +77,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (join_idx < 0) {
-		#ifdef DEBUG
 		std::cerr << "Invalid join index" << std::endl;
-		#endif
 		return -1;
 	}
 
@@ -184,8 +188,9 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 			space_high[0] = high[0] > space_high[0] ? high[0] : space_high[0];
 			space_high[1] = high[1] > space_high[1] ? high[1] : space_high[1];
 			space_high[2] = high[2] > space_high[2] ? high[2] : space_high[2];
-		} catch (...) {
+		} catch (const std::exception &exc) {
 			std::cerr << "******Geometry Parsing Error******" << std::endl;
+			std::cerr << exc.what()<<std::endl;
 			return -1;
 		}
 	

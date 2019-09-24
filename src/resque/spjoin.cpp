@@ -9,72 +9,6 @@
 
 using namespace std;
 
-/*
-  Extract one polyhedron geometry from compressed data with given offset and length
-*/
-Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-	Polyhedron* geom;
-
-	// Initialize parameters
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-
-	#ifdef DEBUG
-	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
-	#endif
-
-	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
-	bool b_allowConcaveFaces = true;
-	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
-
-	// Init the random number generator.
-	srand(4212);
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
-				i_decompPercentage,
-		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-		             b_useLiftingScheme, b_useCurvaturePrediction,
-		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-				dummyoutputname,
-				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-				// fbuffer, length, resque_decomp_buffer);
-		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
-	assert(currentMesh!=NULL);
-	currentMesh->completeOperation();
-
-	//std::cerr << "current mesh: " << *currentMesh << std::endl;
-	std::stringstream os;
-	os << *currentMesh;
-	//os.clear();
-	#ifdef DEBUG
-	std::cerr << "done decomp" << std::endl;
-	#endif
-	geom = new Polyhedron();
-	os >> *geom;
-	//std::cerr << "os: " << os.str() << std::endl;
-
-	// only when volume is needed
-	//if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	//}
-
-	//delete[] fbuffer;
-	//std::cerr << "constructing poly" << std::endl;
-	//std::cerr << "geom: " << *geom << std::endl;
-	delete currentMesh;
-	return geom;
-}
-
-
-
-
 // performs spatial join on the current tile (bucket)
 int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 	SpatialIndex::IStorageManager *storage = NULL;
@@ -199,7 +133,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 			// This is where iSPEED difference from Hadoopgis starts:
 
-			Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
+			Polyhedron geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
 					sttemp.lengthdata[idx1][i], stop.decomp_lod, stop, sttemp, 0);
 
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
@@ -215,7 +149,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				}
 				*/
 
-				Polyhedron* geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
+				Polyhedron geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
 					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod, stop, sttemp, 1);
 				struct mbb_3d * env2 = sttemp.mbbdata[idx2][vis.matches[j]];
 
@@ -250,10 +184,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 					<< " seconds." << std::endl;
 				std::cerr << "********************************************" << std::endl;
 				#endif
-				delete geom2;
-
 			}
-			delete geom1;
 		}
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;
@@ -272,7 +203,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 /* Perform (Refine) spatial computation between 2 geometry objects */
 bool join_with_predicate(
 		struct query_op &stop, struct query_temp &sttemp,
-		Polyhedron * geom1 , Polyhedron * geom2,
+		Polyhedron &geom1 , Polyhedron &geom2,
 		const struct mbb_3d * env1, const struct mbb_3d * env2,
 		const int jp){
 	bool flag = false; // flag == true means the predicate is satisfied
@@ -383,18 +314,18 @@ bool join_with_predicate(
 	if (flag) {
 
 		if (stop.needs_volume_1) {
-			Nef_polyhedron N1(*geom1);
+			Nef_polyhedron N1(geom1);
 			sttemp.volume1 = get_volume(N1);
 		}
 
 		if (stop.needs_volume_2) {
-			Nef_polyhedron N2(*geom2);
+			Nef_polyhedron N2(geom2);
 			sttemp.volume2 = get_volume(N2);
 		}
 
 		// Slow because of this
 		if (stop.needs_intersect_volume) {
-			if((*geom1).is_closed() && (*geom2).is_closed()) {
+			if(geom1.is_closed() && geom2.is_closed()) {
 		//	if(p1.is_closed() && p2.is_closed()){
 
 				/*

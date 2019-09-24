@@ -56,7 +56,7 @@ manipulate_3d: transform/manipulate_3d.o
 ppmc: compression/ppmc.o $(PPMC_OBJS) $(RC_OBJS)
 	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${bindir}/$@
 
-resque_3d: resque/resque_3d.o resque/spjoin.o progparams/resque_params_3d.o $(PPMC_OBJS) $(RC_OBJS)
+resque_3d: resque/aabb_nn.o resque/resque_3d.o resque/resque_common.o resque/spjoin.o resque/voronoi_nn.o progparams/resque_params_3d.o $(PPMC_OBJS) $(RC_OBJS)
 	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math -DCGAL_EIGEN3_ENABLED $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${bindir}/$@
 
 #some other simple programs

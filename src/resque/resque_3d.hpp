@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <sys/shm.h>
+#include <unordered_map>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -82,14 +83,37 @@ typedef Nef_polyhedron::Volume_const_iterator Volume_const_iterator;
 typedef Kernel::Point_3                                       CGAL_Point3;
 typedef CGAL::Delaunay_triangulation_3<Kernel, CGAL::Fast_location> Delaunay;
 
-// Skeleton related
-typedef CGAL::Simple_cartesian<double>                        Sc_Kernel;
-typedef Sc_Kernel::Point_3                                       Sc_Point;
-typedef CGAL::Polyhedron_3<Sc_Kernel>                            Sc_Polyhedron;
-typedef Sc_Kernel::Triangle_3                               Sc_Triangle;
-typedef std::vector<Sc_Triangle>                               Sc_Triangles;
 
-typedef Kernel::FT FT;
+// Skeleton related
+typedef CGAL::Simple_cartesian<double>		Sk_Kernel;
+typedef Sk_Kernel::Point_3					Sk_Point;
+typedef CGAL::Polyhedron_3<Sk_Kernel>		Sk_Polyhedron;
+
+typedef boost::graph_traits<Sk_Polyhedron>::vertex_descriptor    vertex_descriptor;
+typedef CGAL::Mean_curvature_flow_skeletonization<Sk_Polyhedron> Skeletonization;
+typedef Skeletonization::Skeleton                             	 Skeleton;
+typedef Skeleton::vertex_descriptor                              Skeleton_vertex;
+typedef CGAL::Delaunay_triangulation_3<Sk_Kernel, CGAL::Fast_location> Sk_Delaunay;
+
+
+// for AABB tree distance calculation
+typedef CGAL::Triangulation_3<Sk_Kernel> Sk_Triangulation;
+typedef Sk_Triangulation::Point        Sk_CGAL_Point;
+
+typedef Sk_Kernel::FT Sk_FT;
+typedef CGAL::AABB_face_graph_triangle_primitive<Sk_Polyhedron> SK_Primitive;
+typedef CGAL::AABB_traits<Sk_Kernel, SK_Primitive> Sk_Traits;
+typedef CGAL::AABB_tree<Sk_Traits> Sk_Tree;
+typedef Sk_Tree::Point_and_primitive_id Point_and_primitive_id;
+
+// Skeleton related
+//typedef CGAL::Simple_cartesian<double>                        Sc_Kernel;
+//typedef Sc_Kernel::Point_3                                       Sc_Point;
+//typedef CGAL::Polyhedron_3<Sc_Kernel>                            Sc_Polyhedron;
+//typedef Sc_Kernel::Triangle_3                               Sc_Triangle;
+//typedef std::vector<Sc_Triangle>                               Sc_Triangles;
+
+//typedef Kernel::FT FT;
 // for AABB tree distance calculation
 
 /* // Haders for Yanhui's change 
@@ -99,27 +123,20 @@ typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 */
 
-
- // Headers for Hoang's change
-typedef std::list<Triangle>::iterator Cgal_Iterator;
-typedef CGAL::AABB_triangle_primitive<Kernel,Cgal_Iterator> Primitive;
-typedef CGAL::AABB_traits<Kernel, Primitive> Traits;
-//typedef Tree::Point_and_primitive_id Point_and_primitive_id;
-//typedef CGAL::AABB_traits<Sc_Kernel, Sc_Primitive> AABB_triangle_traits;
-//typedef CGAL::AABB_tree<AABB_triangle_traits> Sc_Tree;
-
-// typedef CGAL::AABB_face_graph_triangle_primitive<Sc_Polyhedron> Sc_Primitive;
+//
+// // Headers for Hoang's change
+//typedef std::list<Triangle>::iterator Cgal_Iterator;
+//typedef CGAL::AABB_triangle_primitive<Kernel,Cgal_Iterator> Primitive;
 //typedef CGAL::AABB_traits<Kernel, Primitive> Traits;
-typedef CGAL::AABB_tree<Traits> Tree;
-//typedef std::list<Triangle>::iterator Iterator;
-typedef Tree::Point_and_primitive_id Point_and_primitive_id;
-
-
-typedef boost::graph_traits<Sc_Polyhedron>::vertex_descriptor    vertex_descriptor;
-typedef CGAL::Mean_curvature_flow_skeletonization<Sc_Polyhedron> Skeletonization;
-typedef Skeletonization::Skeleton                             Skeleton;
-typedef Skeleton::vertex_descriptor                           Skeleton_vertex;
-//typedef CGAL::Delaunay_triangulation_3<Sk_Kernel, CGAL::Fast_location> Sk_Delaunay;
+////typedef Tree::Point_and_primitive_id Point_and_primitive_id;
+////typedef CGAL::AABB_traits<Sc_Kernel, Sc_Primitive> AABB_triangle_traits;
+////typedef CGAL::AABB_tree<AABB_triangle_traits> Sc_Tree;
+//
+//// typedef CGAL::AABB_face_graph_triangle_primitive<Sc_Polyhedron> Sc_Primitive;
+////typedef CGAL::AABB_traits<Kernel, Primitive> Traits;
+//typedef CGAL::AABB_tree<Traits> Tree;
+////typedef std::list<Triangle>::iterator Iterator;
+//typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
 // Constants used for building the R-tree
 #define FillFactor 0.9
@@ -133,12 +150,16 @@ typedef Skeleton::vertex_descriptor                           Skeleton_vertex;
 #define SHMSZ 10000000000
 #define NUMBER_DIMENSIONS 3
 
+
+//clock variables
+extern clock_t start_reading_data;
+extern clock_t start_query_exec;
+
+extern clock_t total_reading;
+extern clock_t total_query_exec;
 //using namespace SpatialIndex;
 
 /* Function prototypes */
-
-int join_bucket(struct query_op &stop, struct query_temp &sttemp);
-int execute_query(struct query_op &stop, struct query_temp &sttemp);
 
 int read_cache_file(struct query_op &stop, struct query_temp &sttemp);
 void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard);
@@ -160,27 +181,52 @@ void update_nn(struct query_op &stop, struct query_temp &sttemp,
 bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::ISpatialIndex* & spidx, SpatialIndex::IStorageManager* & storage);
 
 bool join_with_predicate(struct query_op &stop, struct query_temp &sttemp,
-		Polyhedron * geom1 , Polyhedron * geom2, 
+		Polyhedron &geom1 , Polyhedron &geom2,
 		const struct mbb_3d * env1, const struct mbb_3d * env2, const int jp); // for 3d spatial join
-Sc_Polyhedron* sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
+Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id); // to extract geometry from compressed data
-Polyhedron* extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id); // to extract geometry from compressed data
+Sk_Polyhedron sk_extract_geometry(long offset, long length, unsigned i_decompPercentage,
+	struct query_op &stop, struct query_temp &sttemp, int dataset_id);
+
 void report_result(struct query_op &stop, struct query_temp &sttemp, int i, int j);
 void report_result(struct query_op &stop, struct query_temp &sttemp, 
 	std::vector<std::string> &set1fields, int j, bool skip_window_data);
 int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp);
+int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp);
+int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp);
+int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp);
+
+int join_bucket(struct query_op &stop, struct query_temp &sttemp);
+
+int execute_query(struct query_op &stop, struct query_temp &sttemp);
 
 //for 3d spatial join
 double get_volume(Nef_polyhedron &inputpoly);
 void get_triangle(Polyhedron P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr);
-bool intersects(Polyhedron *P1, Polyhedron *P2, const struct mbb_3d * env1, const struct mbb_3d * env2);
-int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp);
-bool join_with_predicate(
-		struct query_op &stop, struct query_temp &sttemp,
-		Polyhedron * geom1 , Polyhedron * geom2,
-		const struct mbb_3d * env1, const struct mbb_3d * env2,
-		const int jp);
+bool intersects(Polyhedron &P1, Polyhedron &P2, const struct mbb_3d * env1, const struct mbb_3d * env2);
+
+
+struct Report {
+  Triangles* triangles;
+  Triangles* cell_triangles;
+
+  Report(Triangles& triangles, Triangles& cell_triangles)
+    : triangles(&triangles), cell_triangles(&cell_triangles)
+  {}
+
+  // callback functor that reports all truly intersecting triangles
+  void operator()(const Box* a, const Box* b) const
+  {
+    if (intersection_flag) {
+    	return;
+    }
+    if ( ! a->handle()->is_degenerate() && ! b->handle()->is_degenerate()
+         && CGAL::do_intersect( *(a->handle()), *(b->handle()))) {
+      intersection_flag = true;
+     // std::cerr << "Intersection? " << intersection_flag << std::endl;
+    }
+  }
+};
 
 #endif
 
