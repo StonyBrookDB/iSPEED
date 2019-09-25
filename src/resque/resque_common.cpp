@@ -63,16 +63,16 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
 	return spidx->isIndexValid();
 }
 
-Sk_Polyhedron sk_extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
-	Sk_Polyhedron geom;
 
+
+MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 	// Initialize parameters
 	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
 
-	#ifdef DEBUG
-	cerr << "sk_geometry: attempting to extract " << offset << TAB << length << endl;
-	#endif
+#ifdef DEBUG
+	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
+#endif
+
 	// Codec features status.
 	bool b_useAdaptiveQuantization = false;
 	bool b_useLiftingScheme = true;
@@ -86,40 +86,24 @@ Sk_Polyhedron sk_extract_geometry(long offset, long length, unsigned i_decompPer
 
 	// Init the random number generator.
 	srand(4212);
-
 	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
 				i_decompPercentage,
-		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-		             b_useLiftingScheme, b_useCurvaturePrediction,
-		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+					 i_mode, i_quantBit, b_useAdaptiveQuantization,
+					 b_useLiftingScheme, b_useCurvaturePrediction,
+					 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+					 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
 				dummyoutputname,
 				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-				// fbuffer, length, resque_decomp_buffer);
-		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
 
+
+	assert(currentMesh!=NULL);
 	currentMesh->completeOperation();
-
-	// debug
-
-	//cerr << "current mesh: " << *currentMesh << endl;
-	std::stringstream os;
-	os << *currentMesh;
-	//os.clear();
-	os >> geom;
 #ifdef DEBUG
-	cerr << "done decomp" << endl;
+	std::cerr << "mesh extracted" << std::endl;
 #endif
+	return currentMesh;
 
-	// only when volume is needed
-	if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	}
-	//cerr << "geom: " << *geom << endl;
-	delete currentMesh;
-	return geom;
 }
-
 
 /*
   Extract one polyhedron geometry from compressed data with given offset and length
@@ -127,57 +111,80 @@ Sk_Polyhedron sk_extract_geometry(long offset, long length, unsigned i_decompPer
 Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
 	Polyhedron geom;
-
-	// Initialize parameters
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-
-	#ifdef DEBUG
-	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
-	#endif
-
-	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
-	bool b_allowConcaveFaces = true;
-	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
-
-	// Init the random number generator.
-	srand(4212);
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
-				i_decompPercentage,
-		             i_mode, i_quantBit, b_useAdaptiveQuantization,
-		             b_useLiftingScheme, b_useCurvaturePrediction,
-		             b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-		             b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-				dummyoutputname,
-				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
-				// fbuffer, length, resque_decomp_buffer);
-		            // b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces, NULL);
-	assert(currentMesh!=NULL);
-	currentMesh->completeOperation();
-
-	//std::cerr << "current mesh: " << *currentMesh << std::endl;
+	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
 	std::stringstream os;
 	os << *currentMesh;
-	//os.clear();
 	#ifdef DEBUG
 	std::cerr << "done decomp" << std::endl;
 	#endif
 	os >> geom;
-	//std::cerr << "os: " << os.str() << std::endl;
-
 	// only when volume is needed
-	//if (stop.needs_intersect_volume) {
+	if (stop.needs_intersect_volume) {
 		sttemp.poly_str[dataset_id].str(os.str());
-	//}
+	}
 
 	delete currentMesh;
 	return geom;
+}
+
+
+/*
+ * the kernel of the polyhedron extracted is Simple_Cartisian
+ * */
+Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
+	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
+	Sc_Polyhedron geom;
+	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
+	std::stringstream os;
+	os << *currentMesh;
+	os >> geom;
+	// only when volume is needed
+	if (stop.needs_intersect_volume) {
+		sttemp.poly_str[dataset_id].str(os.str());
+	}
+	delete currentMesh;
+#ifdef DEBUG
+	cerr << "done decomp" << endl;
+#endif
+	return geom;
+}
+
+
+Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage){
+	Sc_Skeleton skeleton;
+
+	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
+	std::stringstream os;
+	os << *currentMesh;
+	Sc_Triangle_mesh tmesh;
+	os >> tmesh;
+	if (!CGAL::is_triangle_mesh(tmesh)){
+		std::cerr << "Input geometry is not triangulated." << std::endl;
+		exit(-1);
+	}
+	try{
+		Sc_Skeletonization mcs(tmesh);
+		// 1. Contract the mesh by mean curvature flow.
+		mcs.contract_geometry();
+		// 2. Collapse short edges and split bad triangles.
+		mcs.collapse_edges();
+		mcs.split_faces();
+		// 3. Fix degenerate vertices.
+		mcs.detect_degeneracies();
+		// Perform the above three steps in one iteration.
+		mcs.contract();
+		// Iteratively apply step 1 to 3 until convergence.
+		mcs.contract_until_convergence();
+		// Convert the contracted mesh into a curve skeleton and
+		// get the correspondent surface points
+		mcs.convert_to_skeleton(skeleton);
+	}catch(std::exception &exc){
+		std::cerr<<exc.what()<<std::endl;
+		exit(-1);
+	}
+	delete currentMesh;
+
+	return skeleton;
 }
 
 
@@ -285,7 +292,8 @@ double get_volume(Nef_polyhedron &inputpoly) {
 		poly = PList[i];
 		std::vector<CGAL_Point> L;
 		for (Polyhedron::Vertex_const_iterator  it = poly.vertices_begin(); it != poly.vertices_end(); it++) {
-			L.push_back(CGAL_Point(it->point().x(), it->point().y(), it->point().z()));
+			CGAL_Point p(it->point().x(), it->point().y(), it->point().z());
+			L.push_back(p);
 		}
 		Triangulation T(L.begin(), L.end());
 		hull_volume = 0;

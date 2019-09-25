@@ -45,7 +45,7 @@ RC_OBJS := $(patsubst %.c,%.o,$(RC_SRCS))
 
 
 all: queryprocessor_3d  stats_extract_space_dims_3d  manipulate_3d  ppmc  \
-	compress_combine  compress_load  fg_3d ot_3d resque_3d sampler
+	compress_combine  compress_load  fg_3d ot_3d resque_3d sampler test
 
 queryprocessor_3d: framework/queryprocessor_3d.o mapreducecpp/mapreduce_cpp.o progparams/queryprocessor_params_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${bindir}/$@ -Wno-unused-result
@@ -59,6 +59,9 @@ ppmc: compression/ppmc.o $(PPMC_OBJS) $(RC_OBJS)
 resque_3d: resque/aabb_nn.o resque/resque_3d.o resque/resque_common.o resque/spjoin.o resque/voronoi_nn.o progparams/resque_params_3d.o $(PPMC_OBJS) $(RC_OBJS)
 	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math -DCGAL_EIGEN3_ENABLED $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${bindir}/$@
 
+
+test: resque/test.o $(PPMC_OBJS) $(RC_OBJS)
+	$(CXX) -DCGAL_USE_GMP -DCGAL_USE_MPFR -frounding-math -DCGAL_EIGEN3_ENABLED $? $(INCFLAGS) $(LIBS) $(CGALFLAGS) $(CPPFLAGS) -o ${bindir}/$@
 #some other simple programs
 
 stats_extract_space_dims_3d: utilities/stats_extract_space_dims_3d.o

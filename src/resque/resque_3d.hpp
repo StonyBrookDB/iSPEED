@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/shm.h>
 #include <unordered_map>
+#include <stdlib.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -34,6 +35,9 @@
 #include <CGAL/Delaunay_triangulation_3.h>
 #include <CGAL/boost/graph/split_graph_into_polylines.h>
 #include <fstream>
+
+#include <CGAL/Surface_mesh.h>
+
 
 #include <boost/foreach.hpp>
 #include <CGAL/Delaunay_triangulation_3.h>
@@ -59,6 +63,11 @@
 #include "../progparams/resque_params_3d.hpp"
 
 typedef CGAL::Bbox_3                                     Bbox;
+
+/*
+ * definition for kernel Exact_predicates_exact_constructions_kernel
+ *
+ * */
 //typedef CGAL::Exact_predicates_inexact_constructions_kernel  Kernel;
 typedef CGAL::Exact_predicates_exact_constructions_kernel  Kernel;
 typedef Kernel::Triangle_3                               Triangle;
@@ -83,38 +92,30 @@ typedef Nef_polyhedron::Volume_const_iterator Volume_const_iterator;
 typedef Kernel::Point_3                                       CGAL_Point3;
 typedef CGAL::Delaunay_triangulation_3<Kernel, CGAL::Fast_location> Delaunay;
 
+/*
+ * definition of CGAL for kernel Simple_cartesian
+ * */
 
-// Skeleton related
-typedef CGAL::Simple_cartesian<double>		Sk_Kernel;
-typedef Sk_Kernel::Point_3					Sk_Point;
-typedef CGAL::Polyhedron_3<Sk_Kernel>		Sk_Polyhedron;
-
-typedef boost::graph_traits<Sk_Polyhedron>::vertex_descriptor    vertex_descriptor;
-typedef CGAL::Mean_curvature_flow_skeletonization<Sk_Polyhedron> Skeletonization;
-typedef Skeletonization::Skeleton                             	 Skeleton;
-typedef Skeleton::vertex_descriptor                              Skeleton_vertex;
-typedef CGAL::Delaunay_triangulation_3<Sk_Kernel, CGAL::Fast_location> Sk_Delaunay;
-
+typedef CGAL::Simple_cartesian<double>		Sc_Kernel;
+typedef Sc_Kernel::Point_3					Sc_Point;
+typedef CGAL::Polyhedron_3<Sc_Kernel>		Sc_Polyhedron;
+typedef CGAL::Surface_mesh<Sc_Point>                             Sc_Triangle_mesh;
+typedef CGAL::Mean_curvature_flow_skeletonization<Sc_Triangle_mesh> Sc_Skeletonization;
+typedef Sc_Skeletonization::Skeleton                             Sc_Skeleton;
+typedef Sc_Skeleton::vertex_descriptor                           Sc_Skeleton_vertex;
+typedef boost::graph_traits<Sc_Polyhedron>::vertex_descriptor    Sc_vertex_descriptor;
+typedef CGAL::Delaunay_triangulation_3<Sc_Kernel, CGAL::Fast_location> Sc_Delaunay;
 
 // for AABB tree distance calculation
-typedef CGAL::Triangulation_3<Sk_Kernel> Sk_Triangulation;
-typedef Sk_Triangulation::Point        Sk_CGAL_Point;
+typedef CGAL::Triangulation_3<Sc_Kernel> Sc_Triangulation;
+typedef Sc_Triangulation::Point        Sc_CGAL_Point;
 
-typedef Sk_Kernel::FT Sk_FT;
-typedef CGAL::AABB_face_graph_triangle_primitive<Sk_Polyhedron> SK_Primitive;
-typedef CGAL::AABB_traits<Sk_Kernel, SK_Primitive> Sk_Traits;
-typedef CGAL::AABB_tree<Sk_Traits> Sk_Tree;
-typedef Sk_Tree::Point_and_primitive_id Point_and_primitive_id;
+typedef Sc_Kernel::FT Sc_FT;
+typedef CGAL::AABB_face_graph_triangle_primitive<Sc_Polyhedron> Sc_Primitive;
+typedef CGAL::AABB_traits<Sc_Kernel, Sc_Primitive> Sc_Traits;
+typedef CGAL::AABB_tree<Sc_Traits> Sc_Tree;
+typedef Sc_Tree::Point_and_primitive_id Sc_Point_and_primitive_id;
 
-// Skeleton related
-//typedef CGAL::Simple_cartesian<double>                        Sc_Kernel;
-//typedef Sc_Kernel::Point_3                                       Sc_Point;
-//typedef CGAL::Polyhedron_3<Sc_Kernel>                            Sc_Polyhedron;
-//typedef Sc_Kernel::Triangle_3                               Sc_Triangle;
-//typedef std::vector<Sc_Triangle>                               Sc_Triangles;
-
-//typedef Kernel::FT FT;
-// for AABB tree distance calculation
 
 /* // Haders for Yanhui's change 
 typedef CGAL::AABB_face_graph_triangle_primitive<Polyhedron> Primitive;
@@ -183,10 +184,12 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
 bool join_with_predicate(struct query_op &stop, struct query_temp &sttemp,
 		Polyhedron &geom1 , Polyhedron &geom2,
 		const struct mbb_3d * env1, const struct mbb_3d * env2, const int jp); // for 3d spatial join
+MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage);
 Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id); // to extract geometry from compressed data
-Sk_Polyhedron sk_extract_geometry(long offset, long length, unsigned i_decompPercentage,
+Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id);
+Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage);
 
 void report_result(struct query_op &stop, struct query_temp &sttemp, int i, int j);
 void report_result(struct query_op &stop, struct query_temp &sttemp, 

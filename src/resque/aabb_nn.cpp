@@ -11,7 +11,7 @@ using namespace SpatialIndex;
 
 /*
  * perform nearest neighbor query on data sets with AABB tree
- *
+ * the kernel for CGAL we used in this module is Simple Cartesian
  * */
 int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 
@@ -42,11 +42,16 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			#endif
 			return -1;
 		}
+#ifdef DEBUG
+		else{
+			cerr << "index is built on data set 2"<<endl;
+		}
+#endif
 
 		//vector<vector<long>> id1_offset2; // for each nuclei id, the vector of its nearest blood vessels' offset
 		unordered_set<int> unique_nn_id2; // the unique set of nearest blood vessels' offset
 		unordered_map<int, vector<int>> nn_id2; // mapping between the unique offset and length
-		vector<Sk_CGAL_Point> nuclei_pts;
+		vector<Sc_Point> nuclei_pts;
 
 		vector<struct mbb_3d *> geom_mbb1 = sttemp.mbbdata[idx1];
 		for (int i = 0; i < geom_mbb1.size(); i++) {
@@ -86,7 +91,7 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 				// record the unique blood vessels' info
 				unique_nn_id2.insert(vis.matches[j]);
 			}
-			nuclei_pts.push_back(Sk_CGAL_Point(np[0], np[1], np[2]));
+			nuclei_pts.push_back(Sc_Point(np[0], np[1], np[2]));
 		}
 
 		#ifdef DEBUG
@@ -95,27 +100,26 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 
 
 		/* for each unique nearest blood vessel, construct the AABB tree*/
-		unordered_map<int, Sk_Tree*> id2_aabbtree; // map between unique id of blood vessel and its AABB tree
+		unordered_map<int, Sc_Tree*> id2_aabbtree; // map between unique id of blood vessel and its AABB tree
 		// for each mentioned object in data set 2, build an AABB tree
 		for(auto it = unique_nn_id2.begin(); it != unique_nn_id2.end(); ++it ){
 
 			long offset = sttemp.offsetdata[idx2][*it];
 			long length = sttemp.lengthdata[idx2][*it];
 
-			Sk_Polyhedron geom2 = sk_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
-//			Sk_Tree *facet_tree = new Sk_Tree(); // zero-constructed
+			Sc_Polyhedron geom2 = sc_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
+//			Sc_Tree *facet_tree = new Sc_Tree(); // zero-constructed
 //			int valid = 0;
 //			int invalid = 0;
-//			for(Sk_Polyhedron::Facet_iterator fit = geom2->facets_begin(),
-//					end = geom2->facets_end(); fit!=end; ++fit) {
-//				Sk_Polyhedron::Point a(fit->halfedge()->vertex()->point()),
+//			for(Sc_Polyhedron::Facet_iterator fit = geom2.facets_begin(),
+//					end = geom2.facets_end(); fit!=end; ++fit) {
+//				Sc_Polyhedron::Point a(fit->halfedge()->vertex()->point()),
 //									 b(fit->halfedge()->next()->vertex()->point()),
 //									 c(fit->halfedge()->prev()->vertex()->point());
 //
 //				if(!CGAL::collinear(a,b,c)) {
 //					//facet_tree->insert(Facet_primitive(fit, *poly_item->polyhedron(),
-//
-//					facet_tree->insert(SK_Primitive(fit, *geom2, *geom2));
+//					facet_tree->insert(Sc_Primitive(fit, geom2, geom2));
 //					valid++;
 //				} else {
 //					invalid++;
@@ -125,18 +129,20 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 //      		facet_tree->build();
 //			facet_tree->accelerate_distance_queries();
 //			id2_aabbtree[*it] = facet_tree;
-
-			Sk_Tree *tree = new Sk_Tree(faces(geom2).first, faces(geom2).second, geom2);
-			//(*tree).accelerate_distance_queries();
-			id2_aabbtree[*it] = tree;
+			try{
+				Sc_Tree *tree = new Sc_Tree(faces(geom2).first, faces(geom2).second, geom2);
+				id2_aabbtree[*it] = tree;
+			}catch(std::exception &exc){
+				cerr << exc.what()<<endl;
+			}
 		}
 		#ifdef DEBUG
 		cerr << "Done creating AABB tree" << endl;
 		#endif
 
 		/* for each nuclei, calculate distance by searching the AABB tree of its k nearest blood vessels*/
-		Sk_CGAL_Point nuclei_point;
-		Sk_Tree *aabbtree;  // AABB tree for each blood vessel
+		Sc_Point nuclei_point;
+		Sc_Tree *aabbtree;  // AABB tree for each blood vessel
 		int pairs = 0; // number of satisfied results
 		for (int j = 0; j < nuclei_pts.size(); j++) {
 			//cerr << vis.matches[j] << endl;
@@ -148,18 +154,21 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			cerr << "# of NN vessel is: " << ids.size() << endl;
 			#endif
 			//TODO which one should we use?
-			for(int m = 0; m < 2; m++){
-			//for(int m = 0; m < ids.size(); m++){
+			//for(int m = 0; m < 2; m++){
+			for(int m = 0; m < ids.size(); m++){
 				aabbtree = id2_aabbtree[ids[m]];
-				(*aabbtree).accelerate_distance_queries();
-
+				aabbtree->accelerate_distance_queries();
 				#ifdef DEBUG
 				cerr << "Checking distance calc between " << j << TAB << ids[m] << endl;
 				cerr << "point  coords " << nuclei_point << endl;
 				#endif
 				//double squared_dist = CGAL::to_double(CGAL::squared_distance(nnp, nuclei_point));
-				Sk_FT sqd = (*aabbtree).squared_distance(nuclei_point);
+				cerr<<"getting distance"<<endl;
+
+				Sc_FT sqd = aabbtree->squared_distance(nuclei_point);
+				cerr<<"got distance"<<endl;
 				sttemp.nn_distance = sqrt((double)CGAL::to_double(sqd));
+
 
 				cout <<  j << TAB << nuclei_point.x() << TAB << nuclei_point.y() << TAB << nuclei_point.z() << TAB << sttemp.nn_distance << endl;
 				pairs++;

@@ -47,8 +47,6 @@ int main(int argc, char** argv)
 	stop.sid_second_set = stop.join_cardinality == 1 ? SID_1 : SID_2;
 
 	c = execute_query(stop, sttemp);
-
-
 	if (c >= 0 ) {
 		#ifdef DEBUG 
 		std::cerr << "Query Load: [" << c << "]" << std::endl;

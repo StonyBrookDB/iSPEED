@@ -35,9 +35,9 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		}
 
 		// extract the geometry from dataset2 (compressed blood vessels) and extract skeleton
-		Skeleton *skeleton = NULL;
+		Sc_Skeleton *skeleton = NULL;
 
-		std::vector<CGAL_Point3> P;
+		std::vector<Sc_Point> P;
 		vector<struct mbb_3d *> geom_mbb2 = sttemp.mbbdata[idx2];
 
 		for (int i = 0; i < geom_mbb2.size(); i++) {
@@ -48,21 +48,36 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 			cerr << "offset: " << sttemp.offsetdata[idx2][i] << endl;
 			cerr << "length: " << sttemp.lengthdata[idx2][i] << endl;
 			#endif
-			Sk_Polyhedron geom2 = sk_extract_geometry(sttemp.offsetdata[idx2][i], sttemp.lengthdata[idx2][i],
-					stop.decomp_lod, stop, sttemp, 1);
 
 			try {
 				// extract the skeleton of input polyhedron
+#ifdef DEBUG
 		  		cerr << "extracting the Skeleton!" << endl;
-		  		Skeleton skeleton;
-		  		CGAL::extract_mean_curvature_flow_skeleton(geom2, skeleton);
+#endif
+		  		Sc_Skeleton skeleton = extract_skeleton(sttemp.offsetdata[idx2][i],
+		  				sttemp.lengthdata[idx2][i], stop.decomp_lod);
+		  		std::cerr << "Number of vertices of the skeleton: " << boost::num_vertices(skeleton) << "\n";
+		  		std::cerr << "Number of edges of the skeleton: " << boost::num_edges(skeleton) << "\n";
+		  	//	// Output all the edges of the skeleton.
+		  	//	BOOST_FOREACH(Sc_Skeleton_edge e, edges(skeleton)){
+		  	//		const Point& s = skeleton[source(e, skeleton)].point;
+		  	//		const Point& t = skeleton[target(e, skeleton)].point;
+		  	//		std::cerr << "2 "<< s << " " << t << "\n";
+		  	//	}
+//		  		Sc_Skeleton skeleton;
+//		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i],
+//		  				sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
+//		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
+
+		  		BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
+					Sc_Point p = skeleton[v].point;
+					P.push_back(p);
+					cerr << p<< endl;
+					//P.push_back(CGAL_Point3(CGAL::to_double(p.x()), CGAL::to_double(p.y()), CGAL::to_double(p.z())));
+				}
 #ifdef DEBUG
 		  		cerr << "extracted one Skeleton!" << endl;
 #endif
-		  		BOOST_FOREACH(Skeleton_vertex v, vertices(skeleton)){
-					Sk_Point p = skeleton[v].point;
-					P.push_back(CGAL_Point3(CGAL::to_double(p.x()), CGAL::to_double(p.y()), CGAL::to_double(p.z())));
-				}
 			} catch (const std::exception &exc) {
 				cerr << "******Extract Skeleton Error******" << endl;
 				cerr << exc.what() << endl;
@@ -70,7 +85,7 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 			}
 		}
 		// building their Delaunay triangulation (Voronoi).
-		Delaunay T(P.begin(), P.end());
+		Sc_Delaunay T(P.begin(), P.end());
 #ifdef DEBUG
 		std::cerr<<" voronoi graph is built"<<std::endl;
 #endif
@@ -81,13 +96,10 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		for (int i = 0; i < geom_mbb1.size(); i++) {
 
 			struct mbb_3d * env1 = geom_mbb1[i];
+			Sc_Point nuclei_centroid((env1->low[0]+env1->high[0])*0.5,
+					(env1->low[1]+env1->high[1])*0.5, (env1->low[2]+env1->high[2])*0.5);
 
-			CGAL_Point nuclei_centroid(CGAL_Point((env1->low[0]+env1->high[0])*0.5,
-					(env1->low[1]+env1->high[1])*0.5, (env1->low[2]+env1->high[2])*0.5));
-
-			//Delaunay* T = sttemp.voronoi; //load voronoi from cache file. Each cache file is ~500M, too big for IO
-
-			CGAL_Point nnp = T.nearest_vertex(nuclei_centroid)->point();
+			Sc_Point nnp = T.nearest_vertex(nuclei_centroid)->point();
 			double squared_dist = CGAL::to_double(CGAL::squared_distance(nnp, nuclei_centroid));
 			sttemp.nn_distance = sqrt(squared_dist);
 
