@@ -97,85 +97,59 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		#ifdef DEBUG
 		cerr << "Unique NN poly is: " << unique_nn_id2.size() << endl;
 		#endif
+		if(unique_nn_id2.size()==0){
+			return 0;
+		}
 
 
 		/* for each unique nearest blood vessel, construct the AABB tree*/
 		unordered_map<int, Sc_Tree*> id2_aabbtree; // map between unique id of blood vessel and its AABB tree
 		// for each mentioned object in data set 2, build an AABB tree
+		Sc_Tree *tree = NULL;
+		Sc_Polyhedron geom2[unique_nn_id2.size()];
+		int index = 0;
 		for(auto it = unique_nn_id2.begin(); it != unique_nn_id2.end(); ++it ){
 
 			long offset = sttemp.offsetdata[idx2][*it];
 			long length = sttemp.lengthdata[idx2][*it];
 
-			Sc_Polyhedron geom2 = sc_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
-//			Sc_Tree *facet_tree = new Sc_Tree(); // zero-constructed
-//			int valid = 0;
-//			int invalid = 0;
-//			for(Sc_Polyhedron::Facet_iterator fit = geom2.facets_begin(),
-//					end = geom2.facets_end(); fit!=end; ++fit) {
-//				Sc_Polyhedron::Point a(fit->halfedge()->vertex()->point()),
-//									 b(fit->halfedge()->next()->vertex()->point()),
-//									 c(fit->halfedge()->prev()->vertex()->point());
-//
-//				if(!CGAL::collinear(a,b,c)) {
-//					//facet_tree->insert(Facet_primitive(fit, *poly_item->polyhedron(),
-//					facet_tree->insert(Sc_Primitive(fit, geom2, geom2));
-//					valid++;
-//				} else {
-//					invalid++;
-//				}
-//			}
-//			cerr << "Valid and invalid :" << valid << TAB << invalid << endl;
-//      		facet_tree->build();
-//			facet_tree->accelerate_distance_queries();
-//			id2_aabbtree[*it] = facet_tree;
-			try{
-				Sc_Tree *tree = new Sc_Tree(faces(geom2).first, faces(geom2).second, geom2);
-				id2_aabbtree[*it] = tree;
-			}catch(std::exception &exc){
-				cerr << exc.what()<<endl;
-			}
+			geom2[index] = sc_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
+
+			tree = new Sc_Tree(faces(geom2[index]).first, faces(geom2[index]).second, geom2[index]);
+			assert(tree!=NULL && "the aabb tree cannot be NULL");
+			tree->accelerate_distance_queries();
+			id2_aabbtree[*it] = tree;
 		}
-		#ifdef DEBUG
-		cerr << "Done creating AABB tree" << endl;
-		#endif
+#ifdef DEBUG
+		cerr << "Done creating AABB trees" << endl;
+#endif
 
 		/* for each nuclei, calculate distance by searching the AABB tree of its k nearest blood vessels*/
-		Sc_Point nuclei_point;
-		Sc_Tree *aabbtree;  // AABB tree for each blood vessel
-		int pairs = 0; // number of satisfied results
 		for (int j = 0; j < nuclei_pts.size(); j++) {
-			//cerr << vis.matches[j] << endl;
-			//poly = poly2_geom[poly_index[j]];
-			//cerr << *poly << endl;
-			nuclei_point = nuclei_pts[j];
+
 			vector<int> ids = nn_id2[j];
-			#ifdef DEBUG
+#ifdef DEBUG
 			cerr << "# of NN vessel is: " << ids.size() << endl;
-			#endif
+#endif
 			//TODO which one should we use?
 			//for(int m = 0; m < 2; m++){
 			for(int m = 0; m < ids.size(); m++){
-				aabbtree = id2_aabbtree[ids[m]];
-				aabbtree->accelerate_distance_queries();
-				#ifdef DEBUG
+				Sc_Tree *aabbtree = id2_aabbtree[ids[m]];
+				assert(aabbtree!=NULL && "should never happen");
+
+#ifdef DEBUG
 				cerr << "Checking distance calc between " << j << TAB << ids[m] << endl;
-				cerr << "point  coords " << nuclei_point << endl;
-				#endif
-				//double squared_dist = CGAL::to_double(CGAL::squared_distance(nnp, nuclei_point));
-				cerr<<"getting distance"<<endl;
-
-				Sc_FT sqd = aabbtree->squared_distance(nuclei_point);
-				cerr<<"got distance"<<endl;
+				cerr << "point  coords " << nuclei_pts[j] << endl;
+#endif
+				Sc_FT sqd = aabbtree->squared_distance(nuclei_pts[j]);
 				sttemp.nn_distance = sqrt((double)CGAL::to_double(sqd));
-
-
-				cout <<  j << TAB << nuclei_point.x() << TAB << nuclei_point.y() << TAB << nuclei_point.z() << TAB << sttemp.nn_distance << endl;
+#ifdef DEBUG
+				cerr<<"distance is "<<sqd<<endl;
+#endif
+				cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y() << TAB << nuclei_pts[j].z() << TAB << sttemp.nn_distance << endl;
 				pairs++;
 			}
 		}
-
-		cerr << "Done with tile" << endl;
 
 		delete spidx;
 		delete storage;
@@ -194,5 +168,6 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		return -1;
 	} // end of catch
 
+	cerr << "Done with tile" << endl;
 	return pairs ;
 }

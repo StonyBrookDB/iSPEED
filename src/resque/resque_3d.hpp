@@ -100,7 +100,7 @@ typedef CGAL::Simple_cartesian<double>		Sc_Kernel;
 typedef Sc_Kernel::Point_3					Sc_Point;
 typedef CGAL::Polyhedron_3<Sc_Kernel>		Sc_Polyhedron;
 typedef CGAL::Surface_mesh<Sc_Point>                             Sc_Triangle_mesh;
-typedef CGAL::Mean_curvature_flow_skeletonization<Sc_Triangle_mesh> Sc_Skeletonization;
+typedef CGAL::Mean_curvature_flow_skeletonization<Sc_Polyhedron> Sc_Skeletonization;
 typedef Sc_Skeletonization::Skeleton                             Sc_Skeleton;
 typedef Sc_Skeleton::vertex_descriptor                           Sc_Skeleton_vertex;
 typedef boost::graph_traits<Sc_Polyhedron>::vertex_descriptor    Sc_vertex_descriptor;
@@ -189,6 +189,7 @@ Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentag
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id); // to extract geometry from compressed data
 Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
 	struct query_op &stop, struct query_temp &sttemp, int dataset_id);
+Sc_Polyhedron sc_extract_geometry_from_file(const char *path);
 Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage);
 
 void report_result(struct query_op &stop, struct query_temp &sttemp, int i, int j);

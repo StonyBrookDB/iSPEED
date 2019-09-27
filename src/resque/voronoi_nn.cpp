@@ -54,20 +54,22 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 #ifdef DEBUG
 		  		cerr << "extracting the Skeleton!" << endl;
 #endif
-		  		Sc_Skeleton skeleton = extract_skeleton(sttemp.offsetdata[idx2][i],
-		  				sttemp.lengthdata[idx2][i], stop.decomp_lod);
-		  		std::cerr << "Number of vertices of the skeleton: " << boost::num_vertices(skeleton) << "\n";
-		  		std::cerr << "Number of edges of the skeleton: " << boost::num_edges(skeleton) << "\n";
+//		  		Sc_Skeleton skeleton = extract_skeleton(sttemp.offsetdata[idx2][i],
+//		  				sttemp.lengthdata[idx2][i], stop.decomp_lod);
+//		  		std::cerr << "Number of vertices of the skeleton: " << boost::num_vertices(skeleton) << "\n";
+//		  		std::cerr << "Number of edges of the skeleton: " << boost::num_edges(skeleton) << "\n";
 		  	//	// Output all the edges of the skeleton.
 		  	//	BOOST_FOREACH(Sc_Skeleton_edge e, edges(skeleton)){
 		  	//		const Point& s = skeleton[source(e, skeleton)].point;
 		  	//		const Point& t = skeleton[target(e, skeleton)].point;
 		  	//		std::cerr << "2 "<< s << " " << t << "\n";
 		  	//	}
-//		  		Sc_Skeleton skeleton;
-//		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i],
-//		  				sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
-//		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
+		  		Sc_Skeleton skeleton;
+		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i],
+		  				sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
+		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
+
+		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
 
 		  		BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
 					Sc_Point p = skeleton[v].point;

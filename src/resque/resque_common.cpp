@@ -144,45 +144,54 @@ Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPer
 	}
 	delete currentMesh;
 #ifdef DEBUG
-	cerr << "done decomp" << endl;
+	cerr << "geometry is extracted successfully" << endl;
 #endif
+	os.clear();
 	return geom;
 }
 
+Sc_Polyhedron sc_extract_geometry_from_file(const char *path){
+	assert(path!=NULL && "path cannot be NULL");
+	std::ifstream input(path);
+	Sc_Polyhedron poly;
+	input >> poly;
+	input.close();
+	return poly;
+}
 
 Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage){
 	Sc_Skeleton skeleton;
 
-	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
-	std::stringstream os;
-	os << *currentMesh;
-	Sc_Triangle_mesh tmesh;
-	os >> tmesh;
-	if (!CGAL::is_triangle_mesh(tmesh)){
-		std::cerr << "Input geometry is not triangulated." << std::endl;
-		exit(-1);
-	}
-	try{
-		Sc_Skeletonization mcs(tmesh);
-		// 1. Contract the mesh by mean curvature flow.
-		mcs.contract_geometry();
-		// 2. Collapse short edges and split bad triangles.
-		mcs.collapse_edges();
-		mcs.split_faces();
-		// 3. Fix degenerate vertices.
-		mcs.detect_degeneracies();
-		// Perform the above three steps in one iteration.
-		mcs.contract();
-		// Iteratively apply step 1 to 3 until convergence.
-		mcs.contract_until_convergence();
-		// Convert the contracted mesh into a curve skeleton and
-		// get the correspondent surface points
-		mcs.convert_to_skeleton(skeleton);
-	}catch(std::exception &exc){
-		std::cerr<<exc.what()<<std::endl;
-		exit(-1);
-	}
-	delete currentMesh;
+//	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
+//	std::stringstream os;
+//	os << *currentMesh;
+//	Sc_Triangle_mesh tmesh;
+//	os >> tmesh;
+//	if (!CGAL::is_triangle_mesh(tmesh)){
+//		std::cerr << "Input geometry is not triangulated." << std::endl;
+//		exit(-1);
+//	}
+//	try{
+//		Sc_Skeletonization mcs(tmesh);
+//		// 1. Contract the mesh by mean curvature flow.
+//		mcs.contract_geometry();
+//		// 2. Collapse short edges and split bad triangles.
+//		mcs.collapse_edges();
+//		mcs.split_faces();
+//		// 3. Fix degenerate vertices.
+//		mcs.detect_degeneracies();
+//		// Perform the above three steps in one iteration.
+//		mcs.contract();
+//		// Iteratively apply step 1 to 3 until convergence.
+//		mcs.contract_until_convergence();
+//		// Convert the contracted mesh into a curve skeleton and
+//		// get the correspondent surface points
+//		mcs.convert_to_skeleton(skeleton);
+//	}catch(std::exception &exc){
+//		std::cerr<<exc.what()<<std::endl;
+//		exit(-1);
+//	}
+//	delete currentMesh;
 
 	return skeleton;
 }
