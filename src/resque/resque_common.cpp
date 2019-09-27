@@ -152,10 +152,14 @@ Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPer
 
 Sc_Polyhedron sc_extract_geometry_from_file(const char *path){
 	assert(path!=NULL && "path cannot be NULL");
+#ifdef DEBUG
+	cerr<<"reading polyhedron from "<<path<<endl;
+#endif
 	std::ifstream input(path);
 	Sc_Polyhedron poly;
 	input >> poly;
 	input.close();
+	assert(CGAL::is_triangle_mesh(poly) && "polyhedron should be in triangle mesh");
 	return poly;
 }
 

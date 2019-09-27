@@ -106,6 +106,8 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		unordered_map<int, Sc_Tree*> id2_aabbtree; // map between unique id of blood vessel and its AABB tree
 		// for each mentioned object in data set 2, build an AABB tree
 		Sc_Tree *tree = NULL;
+		//todo claim the memory space with new or malloc
+		//this should not work when unique_nn_id2 size is big
 		Sc_Polyhedron geom2[unique_nn_id2.size()];
 		int index = 0;
 		for(auto it = unique_nn_id2.begin(); it != unique_nn_id2.end(); ++it ){

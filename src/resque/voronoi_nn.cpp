@@ -65,17 +65,16 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		  	//		std::cerr << "2 "<< s << " " << t << "\n";
 		  	//	}
 		  		Sc_Skeleton skeleton;
+		  		// todo this is still something wrong here while loading large polyhedron
+		  		// de-compressed by the pmcc, fix it in the future
 		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i],
 		  				sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
 		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
-
 		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
 
 		  		BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
 					Sc_Point p = skeleton[v].point;
 					P.push_back(p);
-					cerr << p<< endl;
-					//P.push_back(CGAL_Point3(CGAL::to_double(p.x()), CGAL::to_double(p.y()), CGAL::to_double(p.z())));
 				}
 #ifdef DEBUG
 		  		cerr << "extracted one Skeleton!" << endl;
@@ -89,7 +88,7 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		// building their Delaunay triangulation (Voronoi).
 		Sc_Delaunay T(P.begin(), P.end());
 #ifdef DEBUG
-		std::cerr<<" voronoi graph is built"<<std::endl;
+		std::cerr<<"voronoi graph is built"<<std::endl;
 #endif
 
 		// For each nuclei, find its nearest blood vessel by checking voronoi
