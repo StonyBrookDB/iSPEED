@@ -5,7 +5,7 @@ services:
     image: hadoop-namenode:latest
     container_name: namenode
     ports:
-      - 9000:9000
+      - 8020:8020
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
     environment:
@@ -19,15 +19,17 @@ services:
     volumes:
       - hadoop_datanode:/hadoop/dfs/data
     environment:
-      SERVICE_PRECONDITION: "namenode:9000"
+      SERVICE_PRECONDITION: "namenode:8020"
     env_file:
       - ./hadoop.env
 
   resourcemanager:
       image: hadoop-resourcemanager:latest
       container_name: resourcemanager
+      ports:
+        - 8032:8032
       environment:
-        SERVICE_PRECONDITION: "namenode:9000 datanode:9864"
+        SERVICE_PRECONDITION: "namenode:8020 datanode:9864"
       env_file:
         - ./hadoop.env
 
@@ -35,14 +37,15 @@ services:
     image: hadoop-nodemanager:latest
     container_name: nodemanager
     environment:
-      SERVICE_PRECONDITION: "namenode:9000 datanode:9864 resourcemanager:8088"
+      SERVICE_PRECONDITION: "namenode:8020 datanode:9864 resourcemanager:8088"
     env_file:
       - ./hadoop.env
+
   historyserver:
     image: hadoop-historyserver:latest
     container_name: historyserver
     environment:
-      SERVICE_PRECONDITION: "namenode:9000 datanode:9864 resourcemanager:8088"
+      SERVICE_PRECONDITION: "namenode:8020 datanode:9864 resourcemanager:8088"
     volumes:
       - hadoop_historyserver:/hadoop/yarn/timeline
     env_file:

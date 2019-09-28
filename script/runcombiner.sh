@@ -15,7 +15,7 @@ fi
 
 
 node_list="localhost"
-data_dir=/ispeed_data
+data_dir=/tmp
 
 #default option
 tmpdir=/tmp/tmpbin
@@ -33,15 +33,20 @@ echo "Copying data from nodes to the current node"
 for i in $node_list
 do
 	echo "copying data from node ${i}"
-	scp ${i}:"${inputbindir}/${commonprefix}*" ${tmpdir}"/"
+	if [ "$i"=="localhost" ];
+	then
+		cp ${i}:"${inputbindir}/${commonprefix}*" ${tmpdir}"/"
+	else
+		scp ${i}:"${inputbindir}/${commonprefix}*" ${tmpdir}"/"
+	fi
 	# for now do not remove yet
 	#ssh ${i} "rm ${inputbindir}/${commonprefix}*" 
 done
 
 # getting the total/global index
 echo "combining the compression results"
-echo "hdfs dfs -cat $1_mbb/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}"
-hdfs dfs -cat $1_mbb/* | ${HADOOPGIS_BIN_PATH}/compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}
+echo "hdfs dfs -cat $1_mbb/* | compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}"
+hdfs dfs -cat $1_mbb/* | compress_combine --inputbin  ${tmpdir} --outputbin ${outputfile} > ${outputmbbs}
 echo "done"
 
 #remove the temporary files
@@ -52,12 +57,7 @@ hdfs dfs -rm -f "$1""_inputresque"
 hdfs dfs -put -f ${outputmbbs} "$1""_inputresque"
 
 # Remove all shared memory segments on all nodes
-for i in $node_list
-do 
-	ssh $i "ipcrm -M 0x0000162e"
-done
-
-# Run loader
+# then run loader
 echo "Running loader to load compressed data on individual nodes"
 
 for i in $node_list
@@ -65,9 +65,11 @@ do
 	echo "loading on node $i"
 	if [ "$i"=="localhost" ];
 	then
-		echo "${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}"
-		${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}
+		ipcrm -M 0x0000162e
+		echo "compress_load -n ${outputfile}"
+		compress_load -n ${outputfile}
 	else
+		ssh $i "ipcrm -M 0x0000162e"
 		scp -r ${outputfile} ${i}:${outputfile}
 		ssh $i "${HADOOPGIS_BIN_PATH}/compress_load -n ${outputfile}"
 	fi
