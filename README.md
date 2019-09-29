@@ -2,7 +2,7 @@
 
 You can try ispeed easily using docker. refer to https://www.docker.com/ for more information about install and use of docker container.
 
-## build docker images
+## Build docker images
 
 ### build hadoop docker images
 
@@ -17,14 +17,15 @@ cd docker-hadoop
 sh build-image.sh
 ```
 
-You can now start the Hadoop docker containers with command:
+You can now create a "hadoop" network and start the Hadoop docker containers with command:
 ```
+docker network create hadoop
 docker-compose up
 ```
 You'll see the servers of namenode, datanode, resourcemanager, nodemanager and historyserver are started in a certain order. Now test the hdfs with command:
 
 ```
-docker run --rm --env-file=hadoop.env --net=host -it hadoop-base hadoop fs -ls /
+docker run --rm --env-file=hadoop.env --net=hadoop -it hadoop-base hadoop fs -ls /
 ```
 
 ### build iSPEED docker image
@@ -34,7 +35,22 @@ the dockerfile to build the iSPEED docker image is in the root folder of iSPEED 
 ```
 docker build -t ispeed .
 ```
-Then test the 
+## Upload data
 
+### generate data
+we put several .off files in the data folder for testing the functionality of iSPEED. You can use our tool to generate any amount of data for scalability testing (will be added shortly).
+### upload data to hdfs
+After generating proper amount of testing data, upload those data files into hdfs with commands:
+```
+hadoop fs -put /path/to/off/file /path/on/hdfs
+```
 
-
+## Run tests
+The scripts in the /script folder can be used to run tests by your own. clean.sh delete the output folders and temporary files, you may want to modify it to fulfill your needs. runcombiner.sh is called by runtest.sh and runtest_nn.sh to combine the compressed data which is the output of the preprocessing step. After uploaded data into folders in hdfs, run command:
+```
+docker run --rm --env-file=hadoop.env --net=hadoop -v /tmp:/tmp -it ispeed bash
+```
+It will run a shell which you can run tests. Then you can run tests with command:
+```
+sh runtest.sh
+```

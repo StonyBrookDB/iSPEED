@@ -35,7 +35,7 @@ do
 	echo "copying data from node ${i}"
 	if [ "$i"=="localhost" ];
 	then
-		cp ${i}:"${inputbindir}/${commonprefix}*" ${tmpdir}"/"
+		cp ${inputbindir}/${commonprefix}* ${tmpdir}"/"
 	else
 		scp ${i}:"${inputbindir}/${commonprefix}*" ${tmpdir}"/"
 	fi

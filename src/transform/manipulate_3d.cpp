@@ -151,10 +151,8 @@ int main(int argc, char **argv) {
 	IStorageManager * storage = NULL;
 	ISpatialIndex * spidx = NULL;
 	if( !build_index_tiles(cachefilename, storage, spidx, &id_tiles)) {
-		#ifdef DEBUG
 		cerr << "ERROR: Index building on tile structure has failed ." << std::endl;
-		#endif
-		return 1 ;
+		exit(0) ;
 	} else {
 		#ifdef DEBUG
 		cerr << "GRIDIndex Generated successfully." << endl;

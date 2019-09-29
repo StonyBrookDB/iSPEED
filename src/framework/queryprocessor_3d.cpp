@@ -229,6 +229,12 @@ bool sp_join(string programpath, vector<string> &input_paths,
 
 	hdfs_delete(programpath, output_path);
 	vector<string> arr_args = {"hadoop", "jar", fr_vars.streaming_path};
+	arr_args.push_back("-files");
+	stringstream ss;
+	ss << fr_vars.hadoopgis_prefix + MANIPULATE << ","
+	   << fr_vars.hadoopgis_prefix + RESQUE << ","
+	   << cachefilefullpath;
+	arr_args.push_back(ss.str());
 	//arr_args.push_back("-conf");
 	//arr_args.push_back("/home/vhoang/mapred-site.xml");
 	for(vector<string>::iterator it = input_paths.begin(); it != input_paths.end(); ++it) {
@@ -239,18 +245,10 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	arr_args.push_back("-output");
 	arr_args.push_back(output_path);
 
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + MANIPULATE);
-	arr_args.push_back("-file");
-	arr_args.push_back(fr_vars.hadoopgis_prefix + RESQUE);
-	arr_args.push_back("-file");
-	string strtmp(cachefilefullpath);
-	arr_args.push_back(strtmp);
-
 	// the mapper phase assign each object to
 	// different tiles with its mbb
 	arr_args.push_back("-mapper");
-	stringstream ss;
+	ss.str("");
 	ss << MANIPULATE << " " << cachefilename;
 	arr_args.push_back(ss.str());
 
@@ -347,6 +345,9 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 	/*
 	 * 2: in the second phase Run combiner on primary node and then loaders on all nodes
 	 *    to load the compressed data into a shared memory
+	 *
+	 *
+	 *
 	 * */
 
 	// we assume the combiner already been executed and the space information can be retrieved
@@ -453,11 +454,12 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 		if (!sp_join(fr_vars.hadoopcmdpath, inputresque, fr_vars.joinoutputpath, fr_vars,
 					tmpFile)) {
 			cerr << "Failed spatial join" << endl;
-			remove(tmpFile);
 			exit(1);
+		}else{
+			remove(tmpFile);
+			cerr << "Done with spatial join." << endl;
 		}
 	}
-	cerr << "Done with spatial join." << endl;
 
 	// Perform duplicate removal
 
