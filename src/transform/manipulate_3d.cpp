@@ -23,25 +23,25 @@ const string STR_3D_HEADER = "OFF";
 bool build_index_tiles(char *cachefilename,
 			IStorageManager* &storage, ISpatialIndex * &spidx,
 			std::map<SpatialIndex::id_type, std::string> *id_tiles) {
-	// build spatial index on tile boundaries 
+	// build spatial index on tile boundaries
 	id_type  indexIdentifier;
 	GEOSDataStreamFileTile stream(cachefilename, id_tiles); // input from cache file
 	storage = StorageManager::createNewMemoryStorageManager();
-	spidx   = RTree::createAndBulkLoadNewRTree(RTree::BLM_STR, stream, *storage, 
+	spidx   = RTree::createAndBulkLoadNewRTree(RTree::BLM_STR, stream, *storage,
 			FillFactor,
 			IndexCapacity,
 			LeafCapacity,
-			3, 
+			3,
 			RTree::RV_RSTAR, indexIdentifier);
 
-	// Error checking 
+	// Error checking
 	return spidx->isIndexValid();
 }
 
 /* Process standard input and emit objects to their respective partitions */
 void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		std::map<id_type, string> *id_tiles) {
-	
+
 	bool firstLineRead = false;
 
 	MyVisitor vis;
@@ -52,7 +52,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 	long count_bad = 0;
 	start_reading_data = clock();
 	#endif
-	
+
 	string input_line;
 	vector<string> fields;
 	vector<string> inner_fields;
@@ -90,11 +90,11 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 				low[2] -= zz;
 				high[0] += xx;
 				high[1] += yy;
-				high[2] += zz;			
+				high[2] += zz;
 			}
 
 			Region r(low, high, 3);
-			/* Find objects matching with intersecting tiles*/	
+			/* Find objects matching with intersecting tiles*/
 			spidx->intersectsWithQuery(r, vis);
 
 			#ifdef DEBUG
@@ -140,6 +140,11 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 
 
 int main(int argc, char **argv) {	
+	std::string input_line;
+	while(cin && getline(cin, input_line) && !cin.eof()){
+		cout << input_line<<endl;
+	}
+	return 0;
 	std::map<id_type, string> id_tiles;
 
 	char *cachefilename = NULL;

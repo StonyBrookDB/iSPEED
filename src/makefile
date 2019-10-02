@@ -95,7 +95,6 @@ install:
 	rm -rf ${builddir} && \
 	mkdir ${builddir} && \
 	mkdir ${bindir} && \
-	mkdir ${libdir} && \
 	cp ../script/* ${bindir}/
 
 clean:

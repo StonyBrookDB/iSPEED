@@ -22,11 +22,13 @@ You can now create a "hadoop" network and start the Hadoop docker containers wit
 docker network create hadoop
 docker-compose up
 ```
-You'll see the servers of namenode, datanode, resourcemanager, nodemanager and historyserver are started in a certain order. Now test the hdfs with command:
+You'll see the servers of namenode, datanode are started in a certain order. Now test the hdfs with command:
 
 ```
 docker run --rm --env-file=hadoop.env --net=hadoop -it hadoop-base hadoop fs -ls /
 ```
+Note that here we just want to run iSPEED in standalone mode. For running iSPEED with cluster mode, use the docker-compose.full.yml to start the servers, which will also start the resource manager and node manager. Then also modify the framework name in the hadoop.env file from local to yarn. 
+
 
 ### build iSPEED docker image
 
@@ -48,9 +50,9 @@ hadoop fs -put /path/to/off/file /path/on/hdfs
 ## Run tests
 The scripts in the /script folder can be used to run tests by your own. clean.sh delete the output folders and temporary files, you may want to modify it to fulfill your needs. runcombiner.sh is called by runtest.sh and runtest_nn.sh to combine the compressed data which is the output of the preprocessing step. After uploaded data into folders in hdfs, run command:
 ```
-docker run --rm --env-file=hadoop.env --net=hadoop -v /tmp:/tmp -it ispeed bash
+docker run --rm --env-file=hadoop.env --net=hadoop -it ispeed bash
 ```
-It will run a shell which you can run tests. Then you can run tests with command:
+It will run a shell which you can run tests. Then you can run tests with command for testing:
 ```
 sh runtest.sh
 ```
