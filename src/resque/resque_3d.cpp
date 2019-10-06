@@ -130,8 +130,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 		perror("shmat");
 		exit(1);
 	}
-	char *decomp_buffer =  new char[BUFFER_SIZE];
-	resque_decomp_buffer = decomp_buffer;
 
 	// Read line by line inputs
 	while (std::cin && getline(std::cin, input_line) && !std::cin.eof()) {
@@ -232,8 +230,6 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 	shmdt(shm_ptr);
 	tile_counter++;
 	release_mem(stop, sttemp, stop.join_cardinality);
-	// clean up newed objects
-	delete[] decomp_buffer;
 
 	return tile_counter;
 }

@@ -152,12 +152,12 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 			srand(4212);
 			//read the mesh:
 			//global variables
-			currentMesh = new MyMesh(NULL, i_decompPercentage,
+			currentMesh = new MyMesh(i_decompPercentage,
 					     i_mode, i_quantBit, b_useAdaptiveQuantization,
 					     b_useLiftingScheme, b_useCurvaturePrediction,
 					     b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
 					     b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-					     input_line, NULL, 0, meshbuffer);
+					     input_line.c_str(), input_line.size());
 			currentMesh->completeOperation();
 			
 			// output the mbb information

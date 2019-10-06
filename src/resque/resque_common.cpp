@@ -66,14 +66,14 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
 
 
 MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
-	// Initialize parameters
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
 
 #ifdef DEBUG
 	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
 #endif
 
+	// Initialize parameters
 	// Codec features status.
+	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
 	bool b_useAdaptiveQuantization = false;
 	bool b_useLiftingScheme = true;
 	bool b_useCurvaturePrediction = true;
@@ -82,18 +82,16 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 	bool b_allowConcaveFaces = true;
 	bool b_useTriangleMeshConnectivityPredictionFaces = true;
 	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
 
 	// Init the random number generator.
 	srand(4212);
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
-				i_decompPercentage,
+	MyMesh *currentMesh = new MyMesh(
+					 i_decompPercentage,
 					 i_mode, i_quantBit, b_useAdaptiveQuantization,
 					 b_useLiftingScheme, b_useCurvaturePrediction,
 					 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
 					 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-				dummyoutputname,
-				(char*)(shm_ptr + offset), length, resque_decomp_buffer);
+					 (char*)(shm_ptr + offset), length);
 
 
 	assert(currentMesh!=NULL);

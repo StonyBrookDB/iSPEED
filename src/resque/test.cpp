@@ -49,7 +49,6 @@ int main()
 {
 	int shmid;
 	char * shm_ptr = NULL;
-	std::string dummyoutputname = "/tmp/nonsense";
 	char *decomp_buffer =  new char[BUFFER_SIZE];
 
 	//use the same key to locate the segment.
@@ -79,14 +78,12 @@ int main()
 
 	// Init the random number generator.
 	srand(4212);
-	MyMesh *currentMesh = new MyMesh(NULL,// dummyoutputname,
-				100,
+	MyMesh *currentMesh = new MyMesh(100,
 					 i_mode, i_quantBit, b_useAdaptiveQuantization,
 					 b_useLiftingScheme, b_useCurvaturePrediction,
 					 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
 					 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-				dummyoutputname,
-				(char*)(shm_ptr), 16759, decomp_buffer);
+					 (char*)(shm_ptr), 16759, decomp_buffer);
 
 
 	assert(currentMesh!=NULL);

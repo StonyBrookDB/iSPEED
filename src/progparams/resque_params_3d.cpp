@@ -6,10 +6,8 @@
 // for sp join yes or no intersection
 bool intersection_flag = false;
 
-char * resque_decomp_buffer = NULL;
 char * shm_ptr = NULL;
 //long maxoffset = 0;
-std::string dummyoutputname = "/tmp/nonsense";
 
 /* Containing methods to extract parameters and store them in query operator */
 

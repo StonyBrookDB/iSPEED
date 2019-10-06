@@ -334,9 +334,7 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
   typedef CGAL::Polyhedron_3< MyKernel, MyItems > PolyhedronT;
 
   public:
-        MyMesh(char filename[], 
-	       //std::string filePathOutput,
-               unsigned i_decompPercentage,
+  	  MyMesh(  unsigned i_decompPercentage,
                const int i_mode,
                unsigned i_quantBits,
                bool b_useAdaptiveQuantization,
@@ -346,11 +344,7 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
                bool b_useConnectivityPredictionEdges,
                bool b_allowConcaveFaces,
                bool b_useTriangleMeshConnectivityPredictionFaces,
-	       std::string & ss,
-	       char* offset,
-		long length,
-		char *buffer_loc
-	);
+			   const char* data, long length);
 
 	~MyMesh();
 
@@ -366,7 +360,6 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
         float getBBoxDiagonal() const;
         Vector getBBoxCenter() const;
 
-  //private:
     public:
         // Protoptypes.
 
@@ -437,7 +430,6 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
         void pushHehInit();
         void updateAvgSurfaces(bool b_split, float f_faceSurface);
         void updateAvgEdgeLen(bool b_original, float f_edgeLen);
-        void printPdata();
 
         // IOs
         void writeCompressedData();
@@ -450,7 +442,6 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
         void readBaseMesh();
         int writeCompressedFile() const;
         int readCompressedFile(char psz_filePath[]);
-	int readCompressedFile(char* s, long size);
         void writeMeshOff(const char psz_filePath[]) const;
         void writeCurrentOperationMesh(std::string pathPrefix, unsigned i_id) const;
 
@@ -551,10 +542,8 @@ class MyMesh: public CGAL::Polyhedron_3< MyKernel, MyItems >
         bool b_useConnectivityPredictionEdges;
         bool b_useTriangleMeshConnectivityPredictionFaces;
 
-	// extra members
-	std::string ss;
-	char *offset;
-	long length;
+        // save the first computed MBB, since the bbMin/bbMax
+        // values can be updated by another function
         Point bbMin0;
         Point bbMax0;
 };

@@ -124,10 +124,8 @@ const std::string STR_OUTPUT_DELIM = ",";
 // for sp join yes or no intersection
 extern bool intersection_flag;
 
-extern char * resque_decomp_buffer;
 extern char * shm_ptr;
 //long maxoffset = 0;
-extern std::string dummyoutputname;
 
 
 // for 3d skeleton vertex

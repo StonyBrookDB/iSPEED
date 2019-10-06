@@ -24,9 +24,7 @@
 #include <algorithm>
 
 
-MyMesh::MyMesh(char filename[], 
-	       //std::string filePathOutput,
-               unsigned i_decompPercentage,
+MyMesh::MyMesh(unsigned i_decompPercentage,
                const int i_mode,
                unsigned i_quantBits,
                bool b_useAdaptiveQuantization,
@@ -36,17 +34,14 @@ MyMesh::MyMesh(char filename[],
                bool b_useConnectivityPredictionEdges,
                bool b_allowConcaveFaces,
                bool b_useTriangleMeshConnectivityPredictionFaces,
-	       std::string & ss,
-		char* offset,
-		long length,
-		char *buffer_loc
-) :
+			   const char* data,
+			   long length
+			   ) :
     CGAL::Polyhedron_3< CGAL::Simple_cartesian<float>, MyItems >(), i_mode(i_mode),
     b_jobCompleted(false), operation(Idle),
     i_curDecimationId(0), i_curQuantizationId(0), i_curOperationId(0),
     i_levelNotConvexId(0), b_testConvexity(false), connectivitySize(0),
     geometrySize(0), i_quantBits(i_quantBits), dataOffset(0),
-   // filePathOutput(filePathOutput),
     i_decompPercentage(i_decompPercentage),
     osDebug(&fbDebug),
     b_useAdaptiveQuantization(b_useAdaptiveQuantization),
@@ -54,138 +49,78 @@ MyMesh::MyMesh(char filename[],
     b_useCurvaturePrediction(b_useCurvaturePrediction),
     b_useConnectivityPredictionFaces(b_useConnectivityPredictionFaces),
     b_useConnectivityPredictionEdges(b_useConnectivityPredictionEdges),
-    b_useTriangleMeshConnectivityPredictionFaces(b_useTriangleMeshConnectivityPredictionFaces),
-    ss(ss), offset(offset), length(length)
+    b_useTriangleMeshConnectivityPredictionFaces(b_useTriangleMeshConnectivityPredictionFaces)
 {
+	assert(length>0);
     // Create the compressed data buffer.
-    //p_data = new char[BUFFER_SIZE];
-    p_data = buffer_loc;
+    p_data = new char[length];
     // Fill the buffer with 0.
- 
-    for (size_t i = 0; i < BUFFER_SIZE; ++i) {
+    for (size_t i = 0; i < length; ++i) {
        p_data[i] = 0;
-   }
+    }
 
     // Initialize the range coder structure.
     rangeCoder.p_data = p_data;
     rangeCoder.p_dataOffset = &dataOffset;
 
-    //std::cout << "p_data: " << (void *)p_data << std::endl;
-    //std::cout << "dataOffset: " << dataOffset << std::endl;
-    if (i_mode == COMPRESSION_MODE_ID) // Compression mode.
-    {
-	
-        //std::filebuf fb;
-        //fb.open (filename, std::ios::in);
-        //if(fb.is_open())
-        //{
-            //std::istream is(&fb);
+    if (i_mode == COMPRESSION_MODE_ID) {
 	    std::istringstream is;
-	    is.str(ss);
-            //std::cerr << ss << std::endl;
-            is >> *this;
-         //   std::cerr << is.size() << std::endl;
+	    is.str(data);
+        is >> *this;
+		if (keep_largest_connected_components(1) != 0){
+			std::cout << "Can't compress the mesh." << std::endl;
+			std::cout << "The codec doesn't handle meshes with several connected components." << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
-	    
-            //fb.close();
+		if (!is_closed()){
+			std::cout << "Can't compress the mesh." << std::endl;
+			std::cout << "The codec doesn't handle meshes with borders." << std::endl;
+			exit(EXIT_FAILURE);
+		}
 
-            if (keep_largest_connected_components(1) != 0)
-            {
-                std::cout << "Can't compress the mesh." << std::endl;
-                std::cout << "The codec doesn't handle meshes with several connected components." << std::endl;
-                exit(EXIT_FAILURE);
-            }
+		/* The special connectivity prediction scheme for triangle
+		   mesh is not used if the current mesh is not a pure triangle mesh. */
+		if (!is_pure_triangle())
+			this->b_useTriangleMeshConnectivityPredictionFaces = false;
 
-            if (!is_closed())
-            {
-                std::cout << "Can't compress the mesh." << std::endl;
-                std::cout << "The codec doesn't handle meshes with borders." << std::endl;
-                exit(EXIT_FAILURE);
-            }
+		computeBoundingBox();
+		determineQuantStep();
+		quantizeVertexPositions();
 
-            /* The special connectivity prediction scheme for triangle
-               mesh is not used if the current mesh is not a pure triangle mesh. */
-            if (!is_pure_triangle())
-                this->b_useTriangleMeshConnectivityPredictionFaces = false;
+		// Set the vertices of the edge that is the departure of the coding and decoding conquests.
+		vh_departureConquest[0] = halfedges_begin()->opposite()->vertex();
+		vh_departureConquest[1] = halfedges_begin()->vertex();
 
-            computeBoundingBox();
-            determineQuantStep();
-            quantizeVertexPositions();
-
-#if 0
-            // Output the initial quantified mesh in an off file.
-            writeMeshOff("mesh_quant.off");
-#endif
-
-      /*      printf("Bounding box min coordinates: %f %f %f.\n",
-                   bbMin.x(), bbMin.y(), bbMin.z());
-            printf("Quantization step: %f\n", f_quantStep); */
-
-            // Set the vertices of the edge that is the departure of the coding and decoding conquests.
-            vh_departureConquest[0] = halfedges_begin()->opposite()->vertex();
-            vh_departureConquest[1] = halfedges_begin()->vertex();
-
-            if (!b_allowConcaveFaces) {
-                b_testConvexity = true;
-	    }
-        //}
-    }
-    else // Decompression mode.
-    {
-        //readCompressedFile(filename);
-	//std::cerr << "reading decompressed shm" << std::endl;
-	
-	//std::cerr << "dataOffset" << dataOffset << "\t" << (long) p_data  << std::endl;
-	readCompressedFile(offset, length);
-        // std::cerr << "dataOffset" << dataOffset << "\t" << (long) p_data  << std::endl;
-	//std::cerr << "reading base mesh" << std::endl;
-        readCompressedData();
-	//std::cerr << "done reading bash mesh" << std::endl;
-        // std::cerr << "dataOffset" << dataOffset << "\t" << (long) p_data  << std::endl;
-
-
-	//sleep(5);
-	//std::cerr << "done reading bash mesh" << std::endl;
+		if (!b_allowConcaveFaces) {
+			b_testConvexity = true;
+		}
+    } else {
+        memcpy(p_data, data, length);
+    	readCompressedData();
         if (i_mode == DECOMPRESSION_MODE_WRITE_ALL_ID){
-	   // std::cerr << "i_mode == DECOMPRESSION_MODE_WRITE_ALL_ID" << std::endl;
             writeCurrentOperationMesh(filePathOutput, 0);
-	}
-	//else
-	//    std::cerr << "i_mode != DECOMPRESSION_MODE_WRITE_ALL_ID" << std::endl;
-        
-	// Set the vertices of the edge that is the departure of the coding and decoding conquests.
+        }
+        // Set the vertices of the edge that is the departure of the coding and decoding conquests.
         vh_departureConquest[0] = vertices_begin();
         vh_departureConquest[1] = ++vertices_begin();
-	//std::cerr << "vertices_begin(): " << vh_departureConquest[0] << std::endl;
-	//std::cerr << "++vertices_begin(): " << ++vertices_begin() << std::endl;
-	
-	//std::cerr << "before batch operation" << std::endl;
-        if (i_levelNotConvexId - i_nbDecimations > 0)
-        {
+        if (i_levelNotConvexId - i_nbDecimations > 0){
             // Decompress until the first convex LOD is reached.
-     //       std::cerr << "happening here" << std::endl;
             while (i_curDecimationId < i_levelNotConvexId) {
-       //     	std::cerr << "first batch" << std::endl;
                 batchOperation();
             }
-	    
-         //   std::cerr << "second batch" << std::endl;
             batchOperation();
         }
     }
-    //std::cerr << "done batch operation" << std::endl;
     i_nbVerticesInit = size_of_vertices();
     i_nbFacetsInit = size_of_facets();
-    //printf("Number of vertices: %lu.\nNumber of faces: %lu.\n",
-    //      i_nbVerticesInit, i_nbFacetsInit);
-
-    //fbDebug.open("debug.txt", std::ios::out | std::ios::trunc);
 }
 
 
-MyMesh::~MyMesh()
-{
-    //delete[] p_data;
+MyMesh::~MyMesh(){
+	if(p_data!=NULL){
+	   delete[] p_data;
+	}
    // fbDebug.close();
 }
 
@@ -403,15 +338,4 @@ Point MyMesh::getPos(PointInt p) const
     return Point((p.x() + 0.5) * f_quantStep * (1 << i_curQuantizationId) + bbMin.x(),
                  (p.y() + 0.5) * f_quantStep * (1 << i_curQuantizationId) + bbMin.y(),
                  (p.z() + 0.5) * f_quantStep * (1 << i_curQuantizationId) + bbMin.z());
-}
-
-void MyMesh::printPdata()
-{
-     for (size_t myidx = 0; myidx < 1000; ++myidx) {
-       //printf("%02x ", p_data[myidx]);
-       printf("%x ", (unsigned) p_data[myidx]);
-
-     }
-     printf("\n\n");
-
 }

@@ -443,57 +443,11 @@ int MyMesh::writeCompressedFile() const
     return i_ret;
 }
 
-/*
+
 // Read the compressed data from the file and store them in a buffer.
 int MyMesh::readCompressedFile(char psz_filePath[])
 {
     int i_ret = 1;
-
-    //printf("Read the compressed file '%s'.\n", psz_filePath);
-
-    std::filebuf fb;
-    fb.open(psz_filePath, std::ios::in);
-
-    if (fb.is_open())
-    {
-        std::streamsize dataSize = fb.in_avail();
-        if (fb.sgetn(p_data, dataSize) == (std::streamsize)dataSize)
-            i_ret = 0;
-        fb.close();
-    }
-
-    return i_ret;
-}
-*/
-
-/*
-// Write the compressed data from the buffer to a file.
-int MyMesh::writeCompressedFile() const
-{
-    int i_ret = 1;
-
-    std::cout << "Write the compressed file " << filePathOutput << "." << std::endl;
-
-    std::filebuf fb;
-    fb.open(filePathOutput.c_str(), std::ios::out | std::ios::trunc);
-     std::cout << "p_data: " << (void *)p_data << std::endl;
-    if (fb.is_open())
-    {
-        if (fb.sputn(p_data, dataOffset) == (std::streamsize)dataOffset)
-            i_ret = 0;
-        fb.close();
-	std::cout <<"dataOffset: " << dataOffset << std::endl;
-	std::cout << "p_data: " << (void *)p_data << std::endl;
-    }
-
-    return i_ret;
-}
-*/
-
-// Read the compressed data from the file and store them in a buffer.
-int MyMesh::readCompressedFile(char* offset, long length)
-{
-    /*int i_ret = 1;
 
     printf("Read the compressed file '%s'.\n", psz_filePath);
 
@@ -508,44 +462,7 @@ int MyMesh::readCompressedFile(char* offset, long length)
         fb.close();
     }
 
-    return i_ret;*/
-
-/*
-  //std::cerr << "got here and doing memcpy " <<  std::endl;
-  std::cerr << "got here and doing memcpy " <<  ( (long) offset) << "\t" << length << "\t" <<  ( (long ) p_data)  <<  std::endl;
-  
-    
-    for (size_t i = 0; i < 1000; ++i) {
-	printf("%02X ", offset[i]);
-    }
-   printf("\n");
-   for (size_t i = 0; i < 1000; ++i) {
-	printf("%02X ", p_data[i]);
-	}
-   printf("\n");
-*/
-
-
-    // Copy data from shm to p_data
-    memcpy(p_data, offset, length);
-
-
-  /*
-    for (size_t i = 0; i < 1000; ++i){
-	printf("%02X ", p_data[i]);
-    }
-   printf("\n");
-*/
- //
- // Hoang commented out this
- //dataOffset = 0;
- //
- //
-
-    //std::cout <<"dataOffset: " << dataOffset << std::endl;
-    //	std::cout << "p_data: " << (void *)p_data << std::endl;
-    //dataSize = length;
-    return 0;
+    return i_ret;
 }
 
 
