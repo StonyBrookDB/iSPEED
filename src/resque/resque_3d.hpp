@@ -152,6 +152,13 @@ typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 #define NUMBER_DIMENSIONS 3
 
 
+
+// for sp join yes or no intersection
+extern bool intersection_flag;
+
+extern char * shm_ptr;
+//long maxoffset = 0;
+
 //clock variables
 extern clock_t start_reading_data;
 extern clock_t start_query_exec;
@@ -161,6 +168,7 @@ extern clock_t total_query_exec;
 //using namespace SpatialIndex;
 
 /* Function prototypes */
+void attach_shm(struct query_op &stop);
 
 int read_cache_file(struct query_op &stop, struct query_temp &sttemp);
 void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard);
@@ -208,6 +216,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp);
 double get_volume(Nef_polyhedron &inputpoly);
 void get_triangle(Polyhedron P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr);
 bool intersects(Polyhedron &P1, Polyhedron &P2, const struct mbb_3d * env1, const struct mbb_3d * env2);
+
 
 
 struct Report {

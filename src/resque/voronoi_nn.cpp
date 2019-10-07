@@ -21,19 +21,10 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 	/* Indicates where original data is mapped to */
 	int idx1 = SID_1;
 	int idx2 = SID_2;
-
 	int nuclei_id = 0;
 	double low[3], high[3];  // Temporary value placeholders for MBB
 
 	try {
-
-		int len1 = sttemp.mbbdata[idx1].size();
-		int len2 = sttemp.mbbdata[idx2].size();
-
-	 	if (len1 <= 0 || len2 <= 0) {
-			 return 0;
-		}
-
 		// extract the geometry from dataset2 (compressed blood vessels) and extract skeleton
 		Sc_Skeleton *skeleton = NULL;
 
@@ -41,13 +32,6 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		vector<struct mbb_3d *> geom_mbb2 = sttemp.mbbdata[idx2];
 
 		for (int i = 0; i < geom_mbb2.size(); i++) {
-
-			#ifdef DEBUG
-			// Extract geometry from compressed data in the shared memeory segment
-			cerr << "obj: " << i << endl;
-			cerr << "offset: " << sttemp.offsetdata[idx2][i] << endl;
-			cerr << "length: " << sttemp.lengthdata[idx2][i] << endl;
-			#endif
 
 			try {
 				// extract the skeleton of input polyhedron
@@ -58,18 +42,18 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 //		  				sttemp.lengthdata[idx2][i], stop.decomp_lod);
 //		  		std::cerr << "Number of vertices of the skeleton: " << boost::num_vertices(skeleton) << "\n";
 //		  		std::cerr << "Number of edges of the skeleton: " << boost::num_edges(skeleton) << "\n";
-		  	//	// Output all the edges of the skeleton.
-		  	//	BOOST_FOREACH(Sc_Skeleton_edge e, edges(skeleton)){
-		  	//		const Point& s = skeleton[source(e, skeleton)].point;
-		  	//		const Point& t = skeleton[target(e, skeleton)].point;
-		  	//		std::cerr << "2 "<< s << " " << t << "\n";
-		  	//	}
+//		  		// Output all the edges of the skeleton.
+//		  		BOOST_FOREACH(Sc_Skeleton_edge e, edges(skeleton)){
+//		  			const Point& s = skeleton[source(e, skeleton)].point;
+//		  			const Point& t = skeleton[target(e, skeleton)].point;
+//		  			std::cerr << "2 "<< s << " " << t << "\n";
+//		  		}
 		  		Sc_Skeleton skeleton;
 		  		// todo this is still something wrong here while loading large polyhedron
 		  		// de-compressed by the pmcc, fix it in the future
-		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i],
-		  				sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
+		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i], sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
 		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
+		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/project/iSPEED/build/bin/outdata.off");
 		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
 
 		  		BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
@@ -102,10 +86,11 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 
 			Sc_Point nnp = T.nearest_vertex(nuclei_centroid)->point();
 			double squared_dist = CGAL::to_double(CGAL::squared_distance(nnp, nuclei_centroid));
-			sttemp.nn_distance = sqrt(squared_dist);
-
+#ifdef DEBUG
+			std::cerr<<"distance: "<<sttemp.nn_distance<<std::endl;
+#endif
 			cout << nuclei_id << TAB << nuclei_centroid.x() << TAB << nuclei_centroid.y()
-					<< TAB << nuclei_centroid.z() << TAB << sttemp.nn_distance << "\n";
+					<< TAB << nuclei_centroid.z() << TAB << squared_dist << "\n";
 
 			nuclei_id++;
 		}

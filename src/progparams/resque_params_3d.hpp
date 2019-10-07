@@ -121,12 +121,6 @@ const std::string PARAM_STATS_NN_DISTANCE = "nn_distance";
 const std::string STR_SET_DELIM = ":";
 const std::string STR_OUTPUT_DELIM = ",";
 
-// for sp join yes or no intersection
-extern bool intersection_flag;
-
-extern char * shm_ptr;
-//long maxoffset = 0;
-
 
 // for 3d skeleton vertex
 /*struct id_point{
@@ -172,7 +166,7 @@ struct query_temp {
 	//std::map<int, std::vector<geos::geom::Geometry*> > polydata;
 	
 	/* Data current to the tile/bucket */
-	std::map<int, std::vector< std::vector<std::string> > > rawdata;
+	//std::map<int, std::vector< std::vector<std::string> > > rawdata;
 	std::map<int, std::vector<struct mbb_3d *> > mbbdata;
 	//std::map<std::vector<Point*>, int > idpoint;
 //	std::vector<double> mbbdata_vector;

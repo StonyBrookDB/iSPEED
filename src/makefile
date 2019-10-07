@@ -19,6 +19,10 @@ ifdef DEBUG
 else
     CPPFLAGS += -DNDEBUG
 endif
+
+ifdef CGAL_MCFSKEL_DEBUG
+	CPPFLAGS += -DCGAL_MCFSKEL_DEBUG
+endif 
  
    
 CC = gcc

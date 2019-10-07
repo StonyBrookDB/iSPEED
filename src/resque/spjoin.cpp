@@ -13,10 +13,9 @@ using namespace std;
 int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 	SpatialIndex::IStorageManager *storage = NULL;
 	SpatialIndex::ISpatialIndex *spidx = NULL;
-	bool selfjoin = stop.join_cardinality == 1  ? true : false;
 	/* Indicates where original data is mapped to */
 	int idx1 = SID_1;
-	int idx2 = selfjoin ? SID_1 : SID_2;
+	int idx2 = SID_2;
 
 	int pairs = 0; // number of satisfied results
 
@@ -33,18 +32,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 		//Polyhedron* geom3 = extract_geometry(sttemp.offsetdata[SID_1][0], sttemp.lengthdata[SID_1][0]);
 		//delete geom3;
 
-		int len1 = sttemp.mbbdata[idx1].size();
-		int len2 = sttemp.mbbdata[idx2].size();
-
-	 	if (len1 <= 0 || len2 <= 0) {
-			 return 0;
-		}
-
-		#ifdef DEBUG
-		std::cerr<<"\nstart one round of joining"<<std::endl;
-		std::cerr << "Length of data"<<idx1<<": " << len1 << std::endl;
-		std::cerr << "Length of data"<<idx2<<": " << len2 << std::endl;
-		#endif
 
 		#ifdef DEBUG
 		std::cerr<<"start building r-tree index"<<std::endl;

@@ -15,20 +15,12 @@ using namespace SpatialIndex;
  * */
 int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 
-	assert(stop.join_cardinality == 2 && "cannot conduct nn on same data set");
-
 	/* Indicates where original data is mapped to */
 	int idx1 = SID_1;
 	int idx2 = SID_2;
 	int pairs = 0; // number of satisfied results
 	double low[3], high[3];  // Temporary value placeholders for MBB
 	int kneighs = 2; // kNN
-
-	int len1 = sttemp.mbbdata[idx1].size();
-	int len2 = sttemp.mbbdata[idx2].size();
- 	if (len1 <= 0 || len2 <= 0) {
-		 return 0;
-	}
 
 	try {
 
@@ -37,9 +29,9 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		IStorageManager *storage = NULL;
 		ISpatialIndex *spidx = NULL;
 		if (! build_index_geoms(sttemp.mbbdata[idx2], spidx, storage)) {
-			#ifdef DEBUG
+#ifdef DEBUG
 			cerr << "Building index on geometries from set 2 has failed" << endl;
-			#endif
+#endif
 			return -1;
 		}
 #ifdef DEBUG
@@ -77,13 +69,10 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			vis.matches.clear();
 			/* Find kNN objects*/
 			spidx->nearestNeighborQuery(1, nuclei_centroid, vis);
-			#ifdef DEBUG
+#ifdef DEBUG
 			cerr << "mbb data size " << sttemp.mbbdata[idx2].size() << TAB << " and found " << vis.matches.size() << endl;
-			#endif
+#endif
 			for (uint32_t j = 0; j < vis.matches.size(); j++) {
-				#ifdef DEBUG
-				cerr << "Query the nearest neighbor between " << i << TAB << vis.matches[j] << endl;
-				#endif
 
 				// push the offset and length of its nearest blood vessels
 				//long offset = sttemp.offsetdata[idx2][vis.matches[j]], length = sttemp.lengthdata[idx2][vis.matches[j]];
@@ -94,9 +83,9 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			nuclei_pts.push_back(Sc_Point(np[0], np[1], np[2]));
 		}
 
-		#ifdef DEBUG
+#ifdef DEBUG
 		cerr << "Unique NN poly is: " << unique_nn_id2.size() << endl;
-		#endif
+#endif
 		if(unique_nn_id2.size()==0){
 			return 0;
 		}
@@ -118,7 +107,6 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			geom2[index] = sc_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
 
 			tree = new Sc_Tree(faces(geom2[index]).first, faces(geom2[index]).second, geom2[index]);
-			assert(tree!=NULL && "the aabb tree cannot be NULL");
 			tree->accelerate_distance_queries();
 			id2_aabbtree[*it] = tree;
 		}
@@ -140,7 +128,7 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 				assert(aabbtree!=NULL && "should never happen");
 
 #ifdef DEBUG
-				cerr << "Checking distance calc between " << j << TAB << ids[m] << endl;
+				cerr << "Checking distance calculation between " << j << TAB << ids[m] << endl;
 				cerr << "point  coords " << nuclei_pts[j] << endl;
 #endif
 				Sc_FT sqd = aabbtree->squared_distance(nuclei_pts[j]);
@@ -148,7 +136,8 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 #ifdef DEBUG
 				cerr<<"distance is "<<sqd<<endl;
 #endif
-				cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y() << TAB << nuclei_pts[j].z() << TAB << sttemp.nn_distance << endl;
+				cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y()
+					 << TAB << nuclei_pts[j].z() << TAB << sttemp.nn_distance << endl;
 				pairs++;
 			}
 		}
@@ -164,12 +153,9 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;
-		#ifdef DEBUG
 		cerr << e.what() << std::endl;
-		#endif
 		return -1;
 	} // end of catch
 
-	cerr << "Done with tile" << endl;
 	return pairs ;
 }

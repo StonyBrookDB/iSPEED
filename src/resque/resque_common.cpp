@@ -23,6 +23,33 @@ clock_t total_query_exec;
 
 
 
+// for sp join yes or no intersection
+bool intersection_flag = false;
+
+char * shm_ptr = NULL;
+//long maxoffset = 0;
+
+void attach_shm(struct query_op &stop){
+
+	std::cerr<<"attaching to shared memory with id "<<COMPRESSION_KEY<<std::endl;
+	// each instance attach to the shared memory for
+	// the compressed objects
+	int shmid;
+	//use the same key to locate the segment.
+	size_t maxoffset2 = stop.shm_max_size;
+	// Getting access to shared memory with all compressed objects stored in there
+	if ((shmid = shmget(COMPRESSION_KEY, maxoffset2, 0666)) < 0) {
+		perror("shmget");
+		exit(1);
+	}
+	// Now we attach the segment to our data space.
+	if ((shm_ptr = (char *) shmat(shmid, (const void *)NULL, 0)) == (char *) -1) {
+		perror("shmat");
+		exit(1);
+	}
+	std::cerr<<"shared memory attached"<<std::endl;
+}
+
 /* Release objects in memory (for the current tile/bucket) */
 void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) {
 	if (stop.join_cardinality <= 0) {
@@ -42,7 +69,6 @@ void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) 
 		sttemp.offsetdata[delete_index].clear();
     	sttemp.lengthdata[delete_index].clear();
 		sttemp.mbbdata[delete_index].clear();
-		sttemp.rawdata[delete_index].clear();
   	}
 }
 

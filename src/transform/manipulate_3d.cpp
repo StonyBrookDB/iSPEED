@@ -11,11 +11,11 @@
 using namespace std;
 
 /* Performance metrics */
-clock_t start_reading_data;
-clock_t start_query_exec;
+clock_t start_reading_data_manipulate;
+clock_t start_query_exec_manipulate;
 
-clock_t total_reading;
-clock_t total_query_exec;
+clock_t total_reading_manipulate;
+clock_t total_query_exec_manipulate;
 
 const string STR_3D_HEADER = "OFF";
 
@@ -50,7 +50,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 	#ifdef DEBUG
 	long count_emitted = 0;
 	long count_bad = 0;
-	start_reading_data = clock();
+	start_reading_data_manipulate = clock();
 	#endif
 
 	string input_line;
@@ -62,6 +62,9 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 	double xx = 20, yy = 20, zz = 20; // buffer size: the maximum MBB of blood vessels
 
 	/* Handling standard input */
+#ifdef DEBUG
+	std::cerr<<"mapper_id obj_id dataset_id 6*mbbs global_offset length: "<<std::endl;
+#endif
 	while(cin && getline(cin, input_line) && !cin.eof()){
 
 		// Removal of \r symbol on Windows
@@ -102,9 +105,9 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 			#endif
 			/* Emit objects to intersecting tiles */
 			for (uint32_t i = 0 ; i < vis.matches.size(); i++ ) {
-				cout<<  (*id_tiles)[vis.matches[i]]	//tile id
-					<< TAB << fields[2]				//dataset id
+				cout<< (*id_tiles)[vis.matches[i]]	//tile id
 					<< TAB << fields[1]				//object id
+					<< TAB << fields[2]				//dataset id
 					// MBB Info
 					<< TAB << low[0] << TAB << low[1] << TAB << low[2]
 					<< TAB << high[0] << TAB << high[1] << TAB << high[2]
@@ -125,28 +128,22 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		fields.clear();
 
 		#ifdef DEBUG
-		total_query_exec += clock() - start_query_exec;
-		start_reading_data = clock();
+		total_query_exec_manipulate += clock() - start_query_exec_manipulate;
+		start_reading_data_manipulate = clock();
 		#endif
 	}
 
 	#ifdef DEBUG
 	/* Output useful statistics */
-	cerr << "Number of processed objects: " << count_objects << endl;
-	cerr << "Number of objects were emitted: " << count_emitted << endl;
-	cerr << "Number of not well formatted objects: " << count_bad << endl;
+	cerr << "Number of objects processed:\t" << count_objects << endl;
+	cerr << "Number of objects emitted:\t" << count_emitted << endl;
+	cerr << "Number of objects malformed:\t" << count_bad << endl;
 	#endif
 }
 
 
-int main(int argc, char **argv) {	
-	std::string input_line;
-	while(cin && getline(cin, input_line) && !cin.eof()){
-		cout << input_line<<endl;
-	}
-	return 0;
+int main(int argc, char **argv) {
 	std::map<id_type, string> id_tiles;
-
 	char *cachefilename = NULL;
 	if(argc < 2){
 		std::cerr<<"usage: manipulate /path/to/partition/file"<<std::endl;

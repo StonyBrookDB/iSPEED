@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
 	// Read standard input
 	while (cin && getline(cin, input_line) && !cin.eof()) {
 		//input format
-		//mapper_id obj_id dataset_id mbb*6 length
+		//mapper_id obj_id dataset_id mbb*6 local_offset length
 		
 		tokenize(input_line, fields, TAB, true);
 		mapper_id = fields[MAPPER_ID_FIELD];

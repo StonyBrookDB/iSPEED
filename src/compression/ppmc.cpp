@@ -76,11 +76,6 @@ int main(int argc, char** argv) {
 		join_idx = SID_1;
 	}
 
-	if (join_idx < 0) {
-		std::cerr << "Invalid join index" << std::endl;
-		return -1;
-	}
-
 	//process objects line by line and generate compressed data in
 	//a temporary file and mbbs in hdfs
 	std::stringstream output_path;

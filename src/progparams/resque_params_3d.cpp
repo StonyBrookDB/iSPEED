@@ -2,13 +2,6 @@
 #include <boost/program_options.hpp>
 #include <utilities/tokenizer.h>
 
-
-// for sp join yes or no intersection
-bool intersection_flag = false;
-
-char * shm_ptr = NULL;
-//long maxoffset = 0;
-
 /* Containing methods to extract parameters and store them in query operator */
 
 /* Display help message to users */
@@ -253,12 +246,6 @@ bool extract_params(int argc, char** argv, struct query_op &stop, struct query_t
 				return false;
 		}
 	}
-
-	// Adjusting the actual geometry field (shift) to account
-	//   for tile_id and join_index
-	#ifdef DEBUG
-    std::cerr << "join cardinality: " << stop.join_cardinality << std::endl;
-	#endif
 
 	// query operator validation 
 	/*

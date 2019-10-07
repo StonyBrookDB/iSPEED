@@ -456,7 +456,7 @@ bool execute_spjoin(struct framework_vars &fr_vars) {
 			cerr << "Failed spatial join" << endl;
 			exit(1);
 		}else{
-			remove(tmpFile);
+			//remove(tmpFile);
 			cerr << "Done with spatial join." << endl;
 		}
 	}
