@@ -32,42 +32,11 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 		vector<struct mbb_3d *> geom_mbb2 = sttemp.mbbdata[idx2];
 
 		for (int i = 0; i < geom_mbb2.size(); i++) {
-
-			try {
-				// extract the skeleton of input polyhedron
-#ifdef DEBUG
-		  		cerr << "extracting the Skeleton!" << endl;
-#endif
-//		  		Sc_Skeleton skeleton = extract_skeleton(sttemp.offsetdata[idx2][i],
-//		  				sttemp.lengthdata[idx2][i], stop.decomp_lod);
-//		  		std::cerr << "Number of vertices of the skeleton: " << boost::num_vertices(skeleton) << "\n";
-//		  		std::cerr << "Number of edges of the skeleton: " << boost::num_edges(skeleton) << "\n";
-//		  		// Output all the edges of the skeleton.
-//		  		BOOST_FOREACH(Sc_Skeleton_edge e, edges(skeleton)){
-//		  			const Point& s = skeleton[source(e, skeleton)].point;
-//		  			const Point& t = skeleton[target(e, skeleton)].point;
-//		  			std::cerr << "2 "<< s << " " << t << "\n";
-//		  		}
-		  		Sc_Skeleton skeleton;
-		  		// todo this is still something wrong here while loading large polyhedron
-		  		// de-compressed by the pmcc, fix it in the future
-		  		Sc_Polyhedron geom = sc_extract_geometry(sttemp.offsetdata[idx2][i], sttemp.lengthdata[idx2][i], stop.decomp_lod, stop, sttemp, 1);
-		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
-		  		//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/project/iSPEED/build/bin/outdata.off");
-		  		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
-
-		  		BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
-					Sc_Point p = skeleton[v].point;
-					P.push_back(p);
-				}
-#ifdef DEBUG
-		  		cerr << "extracted one Skeleton!" << endl;
-#endif
-			} catch (const std::exception &exc) {
-				cerr << "******Extract Skeleton Error******" << endl;
-				cerr << exc.what() << endl;
-				return -1;
-			}
+			//use the advanced way to extract skeleton, the simple one
+			//has bugs on extracting skeleton from polyhedron compressed
+			//by PPMC
+		  	extract_skeleton_advance(sttemp.offsetdata[idx2][i],
+		  			sttemp.lengthdata[idx2][i], stop.decomp_lod, P);
 		}
 		// building their Delaunay triangulation (Voronoi).
 		Sc_Delaunay T(P.begin(), P.end());
@@ -86,12 +55,12 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 
 			Sc_Point nnp = T.nearest_vertex(nuclei_centroid)->point();
 			double squared_dist = CGAL::to_double(CGAL::squared_distance(nnp, nuclei_centroid));
+			double distance = sqrt(squared_dist);
 #ifdef DEBUG
-			std::cerr<<"distance: "<<sttemp.nn_distance<<std::endl;
+			std::cerr<<"distance: "<<distance<<std::endl;
 #endif
 			cout << nuclei_id << TAB << nuclei_centroid.x() << TAB << nuclei_centroid.y()
-					<< TAB << nuclei_centroid.z() << TAB << squared_dist << "\n";
-
+					<< TAB << nuclei_centroid.z() << TAB << distance << "\n";
 			nuclei_id++;
 		}
 

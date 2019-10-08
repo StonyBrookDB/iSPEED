@@ -176,8 +176,7 @@ struct query_temp {
 	// for compressed data
 	std::map<int, std::vector<long> > offsetdata;
 	std::map<int, std::vector<long> > lengthdata;
-	std::istringstream poly_str[2]; // 0 for data set 1, 1 for data set 2
-	//std::stringstream poly_str[2]; // 0 for data set 1, 1 for data set 2
+	//std::istringstream poly_str[2]; // 0 for data set 1, 1 for data set 2
 
 	/* Nearest neighbor temporary placeholders */
 	std::list<struct query_nn_dist*> nearest_distances;

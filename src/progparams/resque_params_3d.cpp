@@ -125,7 +125,6 @@ bool extract_params(int argc, char** argv, struct query_op &stop, struct query_t
 	sttemp.volume1 = -1;
 	sttemp.volume2 = -1;
 	sttemp.intersect_volume = -1;
-	sttemp.nn_distance = -1;
 
 
 	int option_index = 0;

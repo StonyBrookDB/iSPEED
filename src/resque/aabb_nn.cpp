@@ -104,7 +104,7 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			long offset = sttemp.offsetdata[idx2][*it];
 			long length = sttemp.lengthdata[idx2][*it];
 
-			geom2[index] = sc_extract_geometry(offset, length, stop.decomp_lod, stop, sttemp, 1);
+			geom2[index] = sc_extract_geometry(offset, length, stop.decomp_lod);
 
 			tree = new Sc_Tree(faces(geom2[index]).first, faces(geom2[index]).second, geom2[index]);
 			tree->accelerate_distance_queries();
@@ -126,18 +126,13 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			for(int m = 0; m < ids.size(); m++){
 				Sc_Tree *aabbtree = id2_aabbtree[ids[m]];
 				assert(aabbtree!=NULL && "should never happen");
-
-#ifdef DEBUG
-				cerr << "Checking distance calculation between " << j << TAB << ids[m] << endl;
-				cerr << "point  coords " << nuclei_pts[j] << endl;
-#endif
 				Sc_FT sqd = aabbtree->squared_distance(nuclei_pts[j]);
-				sttemp.nn_distance = sqrt((double)CGAL::to_double(sqd));
+				double distance = sqrt((double)CGAL::to_double(sqd));
 #ifdef DEBUG
-				cerr<<"distance is "<<sqd<<endl;
+				cerr<<"distance is "<<distance<<endl;
 #endif
 				cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y()
-					 << TAB << nuclei_pts[j].z() << TAB << sttemp.nn_distance << endl;
+					 << TAB << nuclei_pts[j].z() << TAB << distance << endl;
 				pairs++;
 			}
 		}

@@ -94,7 +94,7 @@ bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::I
 MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 
 #ifdef DEBUG
-	std::cerr << "attempting to extract " << offset << TAB << length << std::endl;
+	std::cerr << "extracting mesh with offset and length " << offset << TAB << length << std::endl;
 #endif
 
 	// Initialize parameters
@@ -132,22 +132,17 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 /*
   Extract one polyhedron geometry from compressed data with given offset and length
 */
-Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
+Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage) {
 	Polyhedron geom;
 	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
 	std::stringstream os;
 	os << *currentMesh;
-	#ifdef DEBUG
-	std::cerr << "done decomp" << std::endl;
-	#endif
 	os >> geom;
-	// only when volume is needed
-	if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	}
-
 	delete currentMesh;
+	os.clear();
+#ifdef DEBUG
+	cerr << "geometry is extracted successfully" << endl;
+#endif
 	return geom;
 }
 
@@ -155,22 +150,17 @@ Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentag
 /*
  * the kernel of the polyhedron extracted is Simple_Cartisian
  * */
-Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id) {
+Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage) {
 	Sc_Polyhedron geom;
 	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
 	std::stringstream os;
 	os << *currentMesh;
 	os >> geom;
-	// only when volume is needed
-	if (stop.needs_intersect_volume) {
-		sttemp.poly_str[dataset_id].str(os.str());
-	}
 	delete currentMesh;
+	os.clear();
 #ifdef DEBUG
 	cerr << "geometry is extracted successfully" << endl;
 #endif
-	os.clear();
 	return geom;
 }
 
@@ -187,41 +177,84 @@ Sc_Polyhedron sc_extract_geometry_from_file(const char *path){
 	return poly;
 }
 
-Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage){
+void extract_skeleton(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P){
+#ifdef DEBUG
+	cerr << "extracting the Skeleton!" << endl;
+#endif
 	Sc_Skeleton skeleton;
+	// todo this is still something wrong here while loading large polyhedron
+	// thus we do not use this method, use the extract_skeleton_advance instead
+	// de-compressed by the pmcc, fix it in the future
+	Sc_Polyhedron geom = sc_extract_geometry(offset, length, i_decompPercentage);
+	Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
 
-//	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
-//	std::stringstream os;
-//	os << *currentMesh;
-//	Sc_Triangle_mesh tmesh;
-//	os >> tmesh;
-//	if (!CGAL::is_triangle_mesh(tmesh)){
-//		std::cerr << "Input geometry is not triangulated." << std::endl;
-//		exit(-1);
-//	}
-//	try{
-//		Sc_Skeletonization mcs(tmesh);
-//		// 1. Contract the mesh by mean curvature flow.
-//		mcs.contract_geometry();
-//		// 2. Collapse short edges and split bad triangles.
-//		mcs.collapse_edges();
-//		mcs.split_faces();
-//		// 3. Fix degenerate vertices.
-//		mcs.detect_degeneracies();
-//		// Perform the above three steps in one iteration.
-//		mcs.contract();
-//		// Iteratively apply step 1 to 3 until convergence.
-//		mcs.contract_until_convergence();
-//		// Convert the contracted mesh into a curve skeleton and
-//		// get the correspondent surface points
-//		mcs.convert_to_skeleton(skeleton);
-//	}catch(std::exception &exc){
-//		std::cerr<<exc.what()<<std::endl;
-//		exit(-1);
-//	}
-//	delete currentMesh;
+	if(geom.is_closed()&&CGAL::is_triangle_mesh(geom)){
+		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
+	}else{
+		std::cerr<<"the polyhedron is not closed"<<endl;
+	}
 
-	return skeleton;
+	BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
+		Sc_Point p = skeleton[v].point;
+		P.push_back(p);
+	}
+#ifdef DEBUG
+	cerr << "extracted one Skeleton!" << endl;
+#endif
+}
+
+
+void extract_skeleton_advance(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P){
+	// some local definition
+	typedef CGAL::Surface_mesh<Point>                             Triangle_mesh;
+	typedef boost::graph_traits<Triangle_mesh>::vertex_descriptor vertex_descriptor;
+	typedef CGAL::Mean_curvature_flow_skeletonization<Triangle_mesh> Skeletonization;
+	typedef Skeletonization::Skeleton                             Skeleton;
+	typedef Skeleton::vertex_descriptor                           Skeleton_vertex;
+	typedef Skeleton::edge_descriptor                             Skeleton_edge;
+
+#ifdef DEBUG
+	cerr << "extracting the Skeleton (advanced)!" << endl;
+#endif
+	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
+	std::stringstream os;
+	os << *currentMesh;
+	Triangle_mesh tmesh;
+	os >> tmesh;
+	if (!CGAL::is_triangle_mesh(tmesh)){
+		std::cerr << "Input geometry is not triangulated." << std::endl;
+		exit(-1);
+	}
+	try{
+		Skeleton skeleton;
+		Skeletonization mcs(tmesh);
+		// 1. Contract the mesh by mean curvature flow.
+		mcs.contract_geometry();
+		// 2. Collapse short edges and split bad triangles.
+		mcs.collapse_edges();
+		mcs.split_faces();
+		// 3. Fix degenerate vertices.
+		mcs.detect_degeneracies();
+		// Perform the above three steps in one iteration.
+		mcs.contract();
+		// Iteratively apply step 1 to 3 until convergence.
+		mcs.contract_until_convergence();
+		// Convert the contracted mesh into a curve skeleton and
+		// get the correspondent surface points
+		mcs.convert_to_skeleton(skeleton);
+
+		BOOST_FOREACH(Skeleton_vertex v, boost::vertices(skeleton)){
+			auto p = skeleton[v].point;
+			P.push_back(Sc_Point(p.x(),p.y(),p.z()));
+		}
+	}catch(std::exception &exc){
+		std::cerr<<exc.what()<<std::endl;
+		exit(-1);
+	}
+	delete currentMesh;
+#ifdef DEBUG
+	cerr << "extracted one Skeleton!" << endl;
+#endif
 }
 
 
@@ -308,8 +341,7 @@ double get_volume(Nef_polyhedron &inputpoly) {
 		Polyhedron P;
 		inputpoly.convert_to_polyhedron(P);
 		PList.push_back(P);
-	}
-	else {
+	} else {
 		// decompose non-convex volume to convex parts
 		convex_decomposition_3(inputpoly);
 		Volume_const_iterator ci = ++inputpoly.volumes_begin();
@@ -329,8 +361,7 @@ double get_volume(Nef_polyhedron &inputpoly) {
 		poly = PList[i];
 		std::vector<CGAL_Point> L;
 		for (Polyhedron::Vertex_const_iterator  it = poly.vertices_begin(); it != poly.vertices_end(); it++) {
-			CGAL_Point p(it->point().x(), it->point().y(), it->point().z());
-			L.push_back(p);
+			L.push_back(CGAL_Point(it->point().x(), it->point().y(), it->point().z()));
 		}
 		Triangulation T(L.begin(), L.end());
 		hull_volume = 0;
@@ -338,7 +369,6 @@ double get_volume(Nef_polyhedron &inputpoly) {
 			Tetrahedron tetr = T.tetrahedron(it);
 			hull_volume += to_double(tetr.volume());
 		}
-
 		total_volume += hull_volume;
 	}
 	return total_volume;

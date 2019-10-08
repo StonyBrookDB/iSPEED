@@ -121,7 +121,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			// This is where iSPEED difference from Hadoopgis starts:
 
 			Polyhedron geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
-					sttemp.lengthdata[idx1][i], stop.decomp_lod, stop, sttemp, 0);
+					sttemp.lengthdata[idx1][i], stop.decomp_lod);
 
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
 
@@ -137,7 +137,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				*/
 
 				Polyhedron geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
-					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod, stop, sttemp, 1);
+					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod);
 				struct mbb_3d * env2 = sttemp.mbbdata[idx2][vis.matches[j]];
 
 				// for now only decomp time
@@ -312,48 +312,24 @@ bool join_with_predicate(
 
 		// Slow because of this
 		if (stop.needs_intersect_volume) {
-			if(geom1.is_closed() && geom2.is_closed()) {
-		//	if(p1.is_closed() && p2.is_closed()){
 
-				/*
-				istringstream poly1str;
-				poly1str << *geom1;
+//			istringstream poly1str;
+//			poly1str << geom1;
+//			istringstream poly2str;
+//			poly1str << geom2;
+//			Nef_polyhedron N1;
+//			Nef_polyhedron N2;
+//			CGAL::OFF_to_nef_3(poly1str, N1);
+//			CGAL::OFF_to_nef_3(poly2str, N2);
 
-     				Nef_polyhedron NP;
-     				CGAL::OFF_to_nef_3(poly1str, N1);
-
-				istringstream poly2str;
-				poly1str << *geom2;
-
-     				Nef_polyhedron NP;
-     				CGAL::OFF_to_nef_3(poly2str, N2);
-				*/
-				Nef_polyhedron N1;
-				Nef_polyhedron N2;
-				CGAL::OFF_to_nef_3(sttemp.poly_str[0], N1);
-				CGAL::OFF_to_nef_3(sttemp.poly_str[1], N2);
-				//Nef_polyhedron N1(*geom1);
-				//Nef_polyhedron N2(*geom2);
-
-				//Nef_polyhedron N1(p1);
-				//Nef_polyhedron N2(p2);
-				Nef_polyhedron Inter = N1 * N2;
-				//Nef_polyhedron Inter = N1 * N2;
-
-				if(Inter.number_of_vertices() > 0) {
-				   	sttemp.intersect_volume = get_volume(Inter);
-				}
-				else {
-					std::cerr << "ERROR: Polyhedrons are not intersected!" << std::endl;
- 				}
-				Inter.clear();
-				N1.clear();
-				N2.clear();
-
-			}
-			else {
-				std::cerr << "ERROR: Polyhedron is not closed!" << std::endl;
-			}
+			Nef_polyhedron N1(geom1);
+			Nef_polyhedron N2(geom2);
+			Nef_polyhedron Inter = N1 * N2;
+			assert(Inter.number_of_vertices()>0&&"Those two polygedrons should be intersected");
+			sttemp.intersect_volume = get_volume(Inter);
+			Inter.clear();
+			N1.clear();
+			N2.clear();
 		}
 
 		/*#ifdef SKIP2D // skip 2d cases

@@ -43,8 +43,6 @@ bool extract_mbb(string programpath, vector<string> &input_paths,
 
 //void read_space(char *filename, struct framework_vars &fr_vars);
 
-bool extract_skeleton(string programpath, string input_path_2,
-  string output_path, struct framework_vars &fr_vars);
 bool build_voronoi(char *input, char *output, struct framework_vars &fr_vars);
 
 bool partition_data(string programpath, string input_path, 

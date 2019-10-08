@@ -99,7 +99,6 @@ typedef CGAL::Delaunay_triangulation_3<Kernel, CGAL::Fast_location> Delaunay;
 typedef CGAL::Simple_cartesian<double>		Sc_Kernel;
 typedef Sc_Kernel::Point_3					Sc_Point;
 typedef CGAL::Polyhedron_3<Sc_Kernel>		Sc_Polyhedron;
-typedef CGAL::Surface_mesh<Sc_Point>                             Sc_Triangle_mesh;
 typedef CGAL::Mean_curvature_flow_skeletonization<Sc_Polyhedron> Sc_Skeletonization;
 typedef Sc_Skeletonization::Skeleton                             Sc_Skeleton;
 typedef Sc_Skeleton::vertex_descriptor                           Sc_Skeleton_vertex;
@@ -193,12 +192,11 @@ bool join_with_predicate(struct query_op &stop, struct query_temp &sttemp,
 		Polyhedron &geom1 , Polyhedron &geom2,
 		const struct mbb_3d * env1, const struct mbb_3d * env2, const int jp); // for 3d spatial join
 MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage);
-Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id); // to extract geometry from compressed data
-Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage,
-	struct query_op &stop, struct query_temp &sttemp, int dataset_id);
+Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage); // to extract geometry from compressed data
+Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage);
 Sc_Polyhedron sc_extract_geometry_from_file(const char *path);
-Sc_Skeleton extract_skeleton(long offset, long length, unsigned i_decompPercentage);
+void extract_skeleton(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P);
+void extract_skeleton_advance(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P);
 
 void report_result(struct query_op &stop, struct query_temp &sttemp, int i, int j);
 void report_result(struct query_op &stop, struct query_temp &sttemp, 
