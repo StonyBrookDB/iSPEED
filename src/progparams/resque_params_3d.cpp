@@ -112,15 +112,6 @@ bool extract_params(int argc, char** argv, struct query_op &stop, struct query_t
 	stop.shm_max_size = 0;
 	stop.decomp_lod = 100; // 100% decompression
 
-	sttemp.nearest_distances.clear();	
-	sttemp.area1 = -1;
-	sttemp.area2 = -1;
-	sttemp.union_area = -1;
-	sttemp.intersect_area = -1;
-	sttemp.dice = -1;
-	sttemp.jaccard = -1;
-	sttemp.distance = -1;
-
 	//for 3d
 	sttemp.volume1 = -1;
 	sttemp.volume2 = -1;

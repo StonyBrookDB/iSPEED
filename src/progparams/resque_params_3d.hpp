@@ -137,14 +137,6 @@ struct query_nn_dist {
 
 /* Struct to hold temporary values during spatial operations */
 struct query_temp {
-	double area1;
-	double area2;
-	double union_area;
-	double intersect_area;
-	double dice;
-	double jaccard;
-	double distance;
-
 	// for 3d
 	double volume1;
 	double volume2;
@@ -178,8 +170,6 @@ struct query_temp {
 	std::map<int, std::vector<long> > lengthdata;
 	//std::istringstream poly_str[2]; // 0 for data set 1, 1 for data set 2
 
-	/* Nearest neighbor temporary placeholders */
-	std::list<struct query_nn_dist*> nearest_distances;
 };
 
 

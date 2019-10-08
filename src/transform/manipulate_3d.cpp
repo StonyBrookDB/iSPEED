@@ -63,7 +63,7 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 
 	/* Handling standard input */
 #ifdef DEBUG
-	std::cerr<<"mapper_id obj_id dataset_id 6*mbbs global_offset length: "<<std::endl;
+	std::cerr<<"mapper_id obj_id dataset_id 6*mbbs global_offset length"<<std::endl;
 #endif
 	while(cin && getline(cin, input_line) && !cin.eof()){
 
@@ -71,9 +71,6 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 		if (input_line.at(input_line.size() - 1) == '\r') {
 			input_line = input_line.substr(0, input_line.size() - 1);
 		}
-		#ifdef DEBUG
-		std::cerr<<"input line:"<<input_line<<std::endl;
-		#endif
 
 		tokenize(input_line, fields, TAB, true);
 		count_objects++;
@@ -99,10 +96,6 @@ void process_input(IStorageManager * &storage, ISpatialIndex * &spidx,
 			Region r(low, high, 3);
 			/* Find objects matching with intersecting tiles*/
 			spidx->intersectsWithQuery(r, vis);
-
-			#ifdef DEBUG
-			cerr << "intersecting with: " << vis.matches.size() << endl;
-			#endif
 			/* Emit objects to intersecting tiles */
 			for (uint32_t i = 0 ; i < vis.matches.size(); i++ ) {
 				cout<< (*id_tiles)[vis.matches[i]]	//tile id

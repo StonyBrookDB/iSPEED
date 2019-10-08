@@ -26,6 +26,8 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 
 		/* Handling for special nearest neighbor query */
 		// build the actual spatial index for input polygons from idx2
+		// which will then be used to find the nearest mbb in data 2 for objects
+		// in dataset 1
 		IStorageManager *storage = NULL;
 		ISpatialIndex *spidx = NULL;
 		if (! build_index_geoms(sttemp.mbbdata[idx2], spidx, storage)) {
@@ -68,10 +70,7 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			SpatialIndex::Point nuclei_centroid(SpatialIndex::Point(np, 3));
 			vis.matches.clear();
 			/* Find kNN objects*/
-			spidx->nearestNeighborQuery(1, nuclei_centroid, vis);
-#ifdef DEBUG
-			cerr << "mbb data size " << sttemp.mbbdata[idx2].size() << TAB << " and found " << vis.matches.size() << endl;
-#endif
+			spidx->nearestNeighborQuery(kneighs, nuclei_centroid, vis);
 			for (uint32_t j = 0; j < vis.matches.size(); j++) {
 
 				// push the offset and length of its nearest blood vessels
@@ -84,29 +83,26 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		}
 
 #ifdef DEBUG
-		cerr << "Unique NN poly is: " << unique_nn_id2.size() << endl;
+		cerr << "number of unique polyhedron will be indexed is: " << unique_nn_id2.size() << endl;
 #endif
 		if(unique_nn_id2.size()==0){
 			return 0;
 		}
 
-
 		/* for each unique nearest blood vessel, construct the AABB tree*/
 		unordered_map<int, Sc_Tree*> id2_aabbtree; // map between unique id of blood vessel and its AABB tree
 		// for each mentioned object in data set 2, build an AABB tree
 		Sc_Tree *tree = NULL;
-		//todo claim the memory space with new or malloc
-		//this should not work when unique_nn_id2 size is big
-		Sc_Polyhedron geom2[unique_nn_id2.size()];
+		Sc_Polyhedron *geom2[unique_nn_id2.size()];
 		int index = 0;
-		for(auto it = unique_nn_id2.begin(); it != unique_nn_id2.end(); ++it ){
+		for(auto it = unique_nn_id2.begin(); it != unique_nn_id2.end(); ++it, ++index ){
 
 			long offset = sttemp.offsetdata[idx2][*it];
 			long length = sttemp.lengthdata[idx2][*it];
 
 			geom2[index] = sc_extract_geometry(offset, length, stop.decomp_lod);
 
-			tree = new Sc_Tree(faces(geom2[index]).first, faces(geom2[index]).second, geom2[index]);
+			tree = new Sc_Tree(faces(*geom2[index]).first, faces(*geom2[index]).second, *geom2[index]);
 			tree->accelerate_distance_queries();
 			id2_aabbtree[*it] = tree;
 		}
@@ -118,23 +114,20 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 		for (int j = 0; j < nuclei_pts.size(); j++) {
 
 			vector<int> ids = nn_id2[j];
-#ifdef DEBUG
-			cerr << "# of NN vessel is: " << ids.size() << endl;
-#endif
-			//TODO which one should we use?
-			//for(int m = 0; m < 2; m++){
-			for(int m = 0; m < ids.size(); m++){
-				Sc_Tree *aabbtree = id2_aabbtree[ids[m]];
+			double min_distance = DBL_MAX;
+			for(int m :ids){
+				Sc_Tree *aabbtree = id2_aabbtree[m];
 				assert(aabbtree!=NULL && "should never happen");
 				Sc_FT sqd = aabbtree->squared_distance(nuclei_pts[j]);
-				double distance = sqrt((double)CGAL::to_double(sqd));
-#ifdef DEBUG
-				cerr<<"distance is "<<distance<<endl;
-#endif
-				cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y()
-					 << TAB << nuclei_pts[j].z() << TAB << distance << endl;
-				pairs++;
+				double distance = (double)CGAL::to_double(sqd);
+				if(min_distance>distance){
+					min_distance = distance;
+				}
 			}
+			min_distance = sqrt(min_distance);
+			cout <<  j << TAB << nuclei_pts[j].x() << TAB << nuclei_pts[j].y()
+				 << TAB << nuclei_pts[j].z() << TAB << min_distance << endl;
+			pairs++;
 		}
 
 		delete spidx;
@@ -145,6 +138,10 @@ int join_bucket_nn_rtree(struct query_op &stop, struct query_temp &sttemp) {
 			delete it->second;
 		}
 		id2_aabbtree.clear();
+		for (Sc_Polyhedron *p:geom2){
+			delete p;
+			p = NULL;
+		}
 
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;

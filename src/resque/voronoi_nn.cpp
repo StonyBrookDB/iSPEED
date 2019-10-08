@@ -30,7 +30,9 @@ int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 
 		std::vector<Sc_Point> P;
 		vector<struct mbb_3d *> geom_mbb2 = sttemp.mbbdata[idx2];
-
+#ifdef DEBUG
+		std::cerr<<"size of data set 2: "<<geom_mbb2.size()<<std::endl;
+#endif
 		for (int i = 0; i < geom_mbb2.size(); i++) {
 			//use the advanced way to extract skeleton, the simple one
 			//has bugs on extracting skeleton from polyhedron compressed

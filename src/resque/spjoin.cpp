@@ -120,7 +120,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 			// This is where iSPEED difference from Hadoopgis starts:
 
-			Polyhedron geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
+			Polyhedron *geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
 					sttemp.lengthdata[idx1][i], stop.decomp_lod);
 
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
@@ -136,7 +136,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				}
 				*/
 
-				Polyhedron geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
+				Polyhedron *geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
 					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod);
 				struct mbb_3d * env2 = sttemp.mbbdata[idx2][vis.matches[j]];
 
@@ -149,7 +149,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 				time(&geometry_st);
 				#endif
 
-				if (join_with_predicate(stop, sttemp, geom1, geom2, env1, env2,
+				if (join_with_predicate(stop, sttemp, *geom1, *geom2, env1, env2,
 							stop.join_predicate))  {
 					//	report_result(stop, sttemp, i, vis.matches[j]);
 					#ifdef DEBUG
@@ -171,7 +171,9 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 					<< " seconds." << std::endl;
 				std::cerr << "********************************************" << std::endl;
 				#endif
+				delete geom2;
 			}
+			delete geom1;
 		}
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;

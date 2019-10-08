@@ -128,13 +128,15 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 
 		tokenize(input_line, fields, TAB, true);
 		if(fields.size()!=11){//skip the corrupted lines
+			std::cerr<<"malformed: "<<fields.size()<<endl;
+						std::cerr<<input_line;
 			continue;
 		}
 
 #ifdef DEBUG
 		// the input is in format (11 fields):
 		// partition_id object_id dataset_id mbbs*6 offset length
-		std::cerr<<input_line<<std::endl;
+		//std::cerr<<input_line<<std::endl;
 #endif
 		/* Parsing fields from input */
 		tile_id = fields[0];

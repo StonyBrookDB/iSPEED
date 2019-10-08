@@ -192,9 +192,9 @@ bool join_with_predicate(struct query_op &stop, struct query_temp &sttemp,
 		Polyhedron &geom1 , Polyhedron &geom2,
 		const struct mbb_3d * env1, const struct mbb_3d * env2, const int jp); // for 3d spatial join
 MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage);
-Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage); // to extract geometry from compressed data
-Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage);
-Sc_Polyhedron sc_extract_geometry_from_file(const char *path);
+Polyhedron *extract_geometry(long offset, long length, unsigned i_decompPercentage); // to extract geometry from compressed data
+Sc_Polyhedron *sc_extract_geometry(long offset, long length, unsigned i_decompPercentage);
+Sc_Polyhedron *sc_extract_geometry_from_file(const char *path);
 void extract_skeleton(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P);
 void extract_skeleton_advance(long offset, long length, unsigned i_decompPercentage, std::vector<Sc_Point> &P);
 

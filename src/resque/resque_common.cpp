@@ -111,6 +111,7 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 
 	// Init the random number generator.
 	srand(4212);
+	// decompress the polyhedron from binary
 	MyMesh *currentMesh = new MyMesh(
 					 i_decompPercentage,
 					 i_mode, i_quantBit, b_useAdaptiveQuantization,
@@ -123,8 +124,15 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 	assert(currentMesh!=NULL);
 	currentMesh->completeOperation();
 #ifdef DEBUG
-	std::cerr << "mesh extracted" << std::endl;
+	std::cerr << "mesh decompressed" << std::endl;
 #endif
+	assert(currentMesh->is_closed()&&"polyhedron should be closed");
+	//assert(currentMesh->is_pure_triangle()&&"polyhedron mesh should be pure triangle");
+//	if(!currentMesh->is_pure_triangle()){
+//		std::cout<<*currentMesh;
+//		exit(1);
+//	}
+
 	return currentMesh;
 
 }
@@ -132,12 +140,12 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 /*
   Extract one polyhedron geometry from compressed data with given offset and length
 */
-Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentage) {
-	Polyhedron geom;
+Polyhedron *extract_geometry(long offset, long length, unsigned i_decompPercentage) {
+	Polyhedron *geom = new Polyhedron();
 	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
 	std::stringstream os;
 	os << *currentMesh;
-	os >> geom;
+	os >> *geom;
 	delete currentMesh;
 	os.clear();
 #ifdef DEBUG
@@ -150,12 +158,12 @@ Polyhedron extract_geometry(long offset, long length, unsigned i_decompPercentag
 /*
  * the kernel of the polyhedron extracted is Simple_Cartisian
  * */
-Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPercentage) {
-	Sc_Polyhedron geom;
+Sc_Polyhedron *sc_extract_geometry(long offset, long length, unsigned i_decompPercentage) {
+	Sc_Polyhedron *geom = new Sc_Polyhedron();
 	MyMesh *currentMesh = extract_mesh(offset, length, i_decompPercentage);
 	std::stringstream os;
 	os << *currentMesh;
-	os >> geom;
+	os >> *geom;
 	delete currentMesh;
 	os.clear();
 #ifdef DEBUG
@@ -164,16 +172,19 @@ Sc_Polyhedron sc_extract_geometry(long offset, long length, unsigned i_decompPer
 	return geom;
 }
 
-Sc_Polyhedron sc_extract_geometry_from_file(const char *path){
+Sc_Polyhedron *sc_extract_geometry_from_file(const char *path){
 	assert(path!=NULL && "path cannot be NULL");
 #ifdef DEBUG
 	cerr<<"reading polyhedron from "<<path<<endl;
 #endif
 	std::ifstream input(path);
-	Sc_Polyhedron poly;
-	input >> poly;
+	Sc_Polyhedron *poly = new Sc_Polyhedron();
+	input >> *poly;
 	input.close();
-	assert(CGAL::is_triangle_mesh(poly) && "polyhedron should be in triangle mesh");
+	assert(CGAL::is_triangle_mesh(*poly) && "polyhedron should be in triangle mesh");
+#ifdef DEBUG
+	cerr << "geometry is extracted successfully" << endl;
+#endif
 	return poly;
 }
 
@@ -185,19 +196,16 @@ void extract_skeleton(long offset, long length, unsigned i_decompPercentage, std
 	// todo this is still something wrong here while loading large polyhedron
 	// thus we do not use this method, use the extract_skeleton_advance instead
 	// de-compressed by the pmcc, fix it in the future
-	Sc_Polyhedron geom = sc_extract_geometry(offset, length, i_decompPercentage);
-	Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
+	Sc_Polyhedron *geom = sc_extract_geometry(offset, length, i_decompPercentage);
+	//Sc_Polyhedron geom = sc_extract_geometry_from_file("/home/teng/gisdata/processed/good.off");
 
-	if(geom.is_closed()&&CGAL::is_triangle_mesh(geom)){
-		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
-	}else{
-		std::cerr<<"the polyhedron is not closed"<<endl;
-	}
+	CGAL::extract_mean_curvature_flow_skeleton(*geom, skeleton);
 
 	BOOST_FOREACH(Sc_Skeleton_vertex v, vertices(skeleton)){
 		Sc_Point p = skeleton[v].point;
 		P.push_back(p);
 	}
+	delete geom;
 #ifdef DEBUG
 	cerr << "extracted one Skeleton!" << endl;
 #endif

@@ -253,12 +253,15 @@ bool sp_join(string programpath, vector<string> &input_paths,
 	arr_args.push_back(ss.str());
 
 	// the resque tool received mbbs for spatial join
+	struct stat results;
+	stat(fr_vars.compressed_data_path.c_str(), &results);
 	arr_args.push_back("-reducer");
 	ss.str("");
 	ss << RESQUE
 	   << " --lod " << fr_vars.decomp_lod
 	   <<" -j "<<fr_vars.join_cardinality
-	   <<" -p "<<fr_vars.predicate;
+	   <<" -p "<<fr_vars.predicate
+	   <<" -z "<<results.st_size;
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
 
 	arr_args.push_back("-numReduceTasks");
