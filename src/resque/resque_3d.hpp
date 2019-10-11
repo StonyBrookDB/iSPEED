@@ -150,11 +150,6 @@ typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 #define SHMSZ 10000000000
 #define NUMBER_DIMENSIONS 3
 
-
-
-// for sp join yes or no intersection
-extern bool intersection_flag;
-
 extern char * shm_ptr;
 //long maxoffset = 0;
 
@@ -188,9 +183,7 @@ void update_nn(struct query_op &stop, struct query_temp &sttemp,
 //bool build_index_geoms(map<int,Geometry*> & geom_polygons, ISpatialIndex* & spidx, IStorageManager* & storage);
 bool build_index_geoms(std::vector<struct mbb_3d *> & geom_mbbs, SpatialIndex::ISpatialIndex* & spidx, SpatialIndex::IStorageManager* & storage);
 
-bool join_with_predicate(struct query_op &stop, struct query_temp &sttemp,
-		Polyhedron &geom1 , Polyhedron &geom2,
-		const struct mbb_3d * env1, const struct mbb_3d * env2, const int jp); // for 3d spatial join
+bool join_with_predicate(struct query_op &stop, Polyhedron *geom1 , Polyhedron *geom2); // for 3d spatial join
 MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage);
 Polyhedron *extract_geometry(long offset, long length, unsigned i_decompPercentage); // to extract geometry from compressed data
 Sc_Polyhedron *sc_extract_geometry(long offset, long length, unsigned i_decompPercentage);
@@ -212,32 +205,9 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp);
 
 //for 3d spatial join
 double get_volume(Nef_polyhedron &inputpoly);
-void get_triangle(Polyhedron P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr);
-bool intersects(Polyhedron &P1, Polyhedron &P2, const struct mbb_3d * env1, const struct mbb_3d * env2);
+void get_triangle(Polyhedron *P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr);
+bool intersects(Polyhedron *P1, Polyhedron *P2);
 
-
-
-struct Report {
-  Triangles* triangles;
-  Triangles* cell_triangles;
-
-  Report(Triangles& triangles, Triangles& cell_triangles)
-    : triangles(&triangles), cell_triangles(&cell_triangles)
-  {}
-
-  // callback functor that reports all truly intersecting triangles
-  void operator()(const Box* a, const Box* b) const
-  {
-    if (intersection_flag) {
-    	return;
-    }
-    if ( ! a->handle()->is_degenerate() && ! b->handle()->is_degenerate()
-         && CGAL::do_intersect( *(a->handle()), *(b->handle()))) {
-      intersection_flag = true;
-     // std::cerr << "Intersection? " << intersection_flag << std::endl;
-    }
-  }
-};
 
 #endif
 

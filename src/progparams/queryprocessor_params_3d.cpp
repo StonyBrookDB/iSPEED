@@ -12,57 +12,43 @@ char nametemplate4[] = "/tmp/hadoopgisrtreeXXXXXX";
 char nametemplate5[] = "/tmp/hadoopgisspaceXXXXXX";
 char nametemplate6[] = "/tmp/hadoopgiscompressXXXXXX";
 
-void init_params(struct framework_vars &fr_vars) {
-	fr_vars.size_1 = fr_vars.size_2 = -1;
-	fr_vars.partition_method = "bsp";
-	fr_vars.partition_method_2 = "bsp";
-	fr_vars.partitioningparams = "";
-	fr_vars.obtain_size_1 = fr_vars.obtain_size_2 = 0;
-	fr_vars.sampling_rate = 1.0;
-	fr_vars.bucket_size = -1;
-	fr_vars.para_partition = false;
-	fr_vars.rough_bucket_size = -1;
-	fr_vars.overwritepath = false;
-	fr_vars.decomp_lod = 100;
-	fr_vars.numreducers = 1;
+inline Operation get_operation(string type){
+	for(int i=0;i<4;i++){
+		if(strcmp(type.c_str(),operation_str[i].c_str())==0){
+			return (Operation)i;
+		}
+	}
+	return ERROR;
 }
 
+inline void remove_slash(string &str){
+	if (str.at(str.size() - 1) == '/') {
+		str = str.substr(0, str.size() - 1);
+	}
+}
 
 bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
-	fr_vars.join_cardinality = 1;
 	string binpath;
+	string querytype;
 	try {
 		po::options_description desc("Options");
 		desc.add_options()
-			("help", "This help message")
-			("querytype,q", po::value<string>(&fr_vars.query_type), "Query type [ partition | contaiment | spjoin |spnn_voronoi |spnn_rtree ]")
-			("bucket,p", po::value<long>(&fr_vars.bucket_size), "Fine-grain level tile size for spjoin")
-			("blocksize", po::value<long>(&fr_vars.block_size), "Fine-grain level bucket size for partitioning (loading data)")
-			("roughbucket", po::value<long>(&fr_vars.rough_bucket_size), "Rough level bucket size for partitioning")
+			("help,h", "This help message")
+			("querytype,q", po::value<string>(&querytype), "Query type [ partition | compress | join]")
+			("bucket,k", po::value<long>(&fr_vars.bucket_size), "Fine-grain level tile size for spjoin")
 			("input1,a", po::value<string>(&fr_vars.input_path_1), "HDFS file path to data set 1")
 			("input2,b", po::value<string>(&fr_vars.input_path_2), "HDFS file path to data set 2")
-			("mbb1", po::value<string>(&fr_vars.mbb_path_1), "HDFS path to MBBs of data set 1")
-			("mbb2", po::value<string>(&fr_vars.mbb_path_2), "HDFS path to MBBs of data set 2")
+			("outputpath,o", po::value<string>(&fr_vars.output_path), "Output path")
+
 			("distance,d", po::value<double>(&fr_vars.distance), "Distance (used for certain predicates)")
-			("outputpath,h", po::value<string>(&fr_vars.output_path), "Output path")
-			("containfile", po::value<string>(&fr_vars.user_file), "User file containing window used for containment query")
-			("containrange", po::value<string>(&fr_vars.containment_window), "Comma separated list of window used for containemtn query")
-			("predicate,t", po::value<string>(&fr_vars.predicate), "Predicate for spatial join and nn queries \
-[ st_intersects | st_nn_voronoi | st_nn_rtree | st_touches | st_crosses | st_contains | st_adjacent | st_disjoint \
-| st_equals | st_dwithin | st_within | st_overlaps | st_nearest | st_nearest2 ] ")
+			("predicate,p", po::value<string>(&fr_vars.predicate), "Predicate for spatial join and nn queries "
+					"[ st_intersects | st_touches | st_crosses | st_contains | st_adjacent | st_disjoint "
+					"| st_equals | st_dwithin | st_within | st_overlaps | st_nn_voronoi | st_nn_rtree ] ")
 			("samplingrate,s", po::value<double>(&fr_vars.sampling_rate), "Sampling rate (0, 1]") 
-			("partitioner,u", po::value<string>(&fr_vars.partition_method), "Partitioning method ([fg_3d | bsp \
-hc | str | bos | slc | ot_3d ]")
-			("partitioner2,v", po::value<string>(&fr_vars.partition_method_2), "(Optional) Partitioning for \
-second method [fg | bsp | hc | str | bos | slc | qt ]")
-			("overwrite,o", "Overwrite existing hdfs directories") 
-			("parapartition,z", "Use 2 partitioning steps")
+			("partitioner,t", po::value<string>(&fr_vars.partition_method), "Partitioning method ([fg_3d | ot_3d ]")
+			("overwrite", "Overwrite existing hdfs directories")
 			("numreducers,n", po::value<int>(&fr_vars.numreducers), "The number of reducers")
-			("removetmp", "Remove temporary directories on HDFS")
-			("removembb", "Remove MBB directory on HDFS")
-			("compression", "Runs the code till the step before partitioning")
-			("spatialproc", "Runs the code from partitioning till the end of spatial processing")
-			("decomplod", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
+			("lod,l", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
 			("binpath",po::value<string>(&binpath), "path to the binary executables")
 			("compressed_data_path",po::value<string>(&fr_vars.compressed_data_path), "path to the combined compressed spatial data")
 			;
@@ -70,120 +56,77 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		po::store(po::parse_command_line(argc, argv, desc), vm);
 		po::notify(vm);   
 
-		if (vm.count("help") || !vm.count("querytype") ) {
+		if (vm.count("help")) {
 			cerr << desc << endl;
-			return 0;
+			return false;
 		}
-
-		if (vm.count("input2")) {
-			fr_vars.join_cardinality = 2;
-		}
-
-		if (vm.count("compression")) {
-			fr_vars.comp_mode = 1;
-		} else if (vm.count("spatialproc")) {
-			fr_vars.comp_mode = 0;
-		} else {
-			// error
+		if (!vm.count("querytype")) {
 			cerr << desc << endl;
-			return 0;
+			cerr << "operation type must be given" << endl;
+			return false;
+		}
+		fr_vars.query_type = get_operation(querytype);
+		if(!vm.count("binpath")){
+			cerr << desc << endl;
+			cerr << "path to the binary executables must be given"<<endl;
+			return false;
+		}
+		if(!vm.count("outputpath")){
+			cerr << desc << endl;
+			cerr << "path to the output folder must be given"<<endl;
+			return false;
 		}
 
-
-
-		// Remove trailing slash in path
-		if (fr_vars.output_path.at(fr_vars.output_path.size() - 1) == '/') {
-			fr_vars.output_path = fr_vars.output_path.substr(0, fr_vars.output_path.size() - 1);
-		}
-		if (fr_vars.input_path_1.at(fr_vars.input_path_1.size() - 1) == '/') {
-			fr_vars.input_path_1 = fr_vars.input_path_1.substr(0, fr_vars.input_path_1.size() - 1);
-		}
-		if (vm.count("input2") && fr_vars.input_path_2.at(fr_vars.input_path_2.size() - 1) == '/') {
-			fr_vars.input_path_2 = fr_vars.input_path_2.substr(0, fr_vars.input_path_2.size() - 1);
-		}
-
-		if (vm.count("parapartition")) {
-			fr_vars.para_partition = true;
-		}
-		if (vm.count("removetmp")) {
-			fr_vars.remove_tmp_dirs = true;
-		}
-		if (vm.count("removembb")) {
-			fr_vars.remove_tmp_mbb = true;
-		}
-
-		if (vm.count("partitioner")) {
-			if (fr_vars.partition_method != PARTITION_FG
-				&& fr_vars.partition_method != PARTITION_BSP	
-				&& fr_vars.partition_method != PARTITION_SFC
-				&& fr_vars.partition_method != PARTITION_BOS	
-				&& fr_vars.partition_method != PARTITION_SLC
-				&& fr_vars.partition_method != PARTITION_QT	
-				&& fr_vars.partition_method != PARTITION_STR
-				&& fr_vars.partition_method != PARTITION_FG_3D
-				&& fr_vars.partition_method != PARTITION_OT_3D) {
-				cerr << "Invalid partitioner. Run --help" << endl;
-				return 1;
-			}	
-		} else {
-			fr_vars.partition_method = PARTITION_FG_3D;
-		}
-		if (vm.count("partitioner2")) {
-			if (fr_vars.partition_method_2 != PARTITION_FG
-				&& fr_vars.partition_method_2 != PARTITION_BSP	
-				&& fr_vars.partition_method_2 != PARTITION_SFC
-				&& fr_vars.partition_method_2 != PARTITION_BOS	
-				&& fr_vars.partition_method_2 != PARTITION_SLC
-				&& fr_vars.partition_method_2 != PARTITION_QT	
-				&& fr_vars.partition_method_2 != PARTITION_STR
-				&& fr_vars.partition_method != PARTITION_FG_3D
-				&& fr_vars.partition_method != PARTITION_OT_3D) {
-				cerr << "Invalid partitioner for step 2. Run --help" << endl;
-				return 1;
-			}	
-		} else {
-			fr_vars.partition_method_2 = PARTITION_FG_3D;
-		}
-
+		remove_slash(fr_vars.output_path);
 		if (vm.count("overwrite")) {
-			fr_vars.overwritepath = true;	
+			fr_vars.overwritepath = true;
 		}
 
-		if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
-			if (vm.count("containfile")) { 
-				fr_vars.containment_use_file = true;	
-			} else if (vm.count("containrange")) {
-				fr_vars.containment_use_file = false;	
-			} else {
-				cerr << "Missing range information for query. Run --help" << endl;
-				return 1;
+		// some general constrains
+		switch(fr_vars.query_type){
+		case JOIN:
+		case COMPRESS:
+			if(fr_vars.query_type==JOIN&&!vm.count("predicate")){
+				cerr << desc << endl;
+				cerr << "type of predict should be given"<<endl;
+				return false;
 			}
+			if(!vm.count("input1")){
+				cerr << desc << endl;
+				cerr << "path for input1 should be given"<<endl;
+				return false;
+			}
+			remove_slash(fr_vars.input_path_1);
+			if(vm.count("input2")){
+				fr_vars.join_cardinality = 2;
+				remove_slash(fr_vars.input_path_2);
+			}
+			break;
+		case PARTITION:
+			// sample rate, bucket size, partitioner can be specified
+			if (fr_vars.partition_method != PARTITION_FG_3D
+				&& fr_vars.partition_method != PARTITION_OT_3D) {
+				cerr << desc << endl;
+				cerr << "Invalid partitioner." << endl;
+				return false;
+			}
+			break;
+		case DUPLICATE_REMOVAL:
+			break;
+		default:
+			break;
 		}
 
-
-		/* Check for parameter completeness */	
-		if (!vm.count("mbb1")) {
-			fr_vars.mbb_path_1 = "";
-		}
-		if (!vm.count("mbb2")) {
-			fr_vars.mbb_path_2 = "";
-		}
-
-		/* Update environment variables */
-		fr_vars.hadoopldlibpath = update_ld_lib_path();
+		/* Update environment variables with HADOOP_HOME defined*/
 		fr_vars.hadoopcmdpath = getHadoopCmdPath();
 		fr_vars.hdfscmdpath = getHdfsCmdPath();
 		fr_vars.streaming_path = getHadoopJarPath();
-		fr_vars.hadoopgis_prefix = binpath + SLASH;
+
+		fr_vars.binary_prefix = binpath + SLASH;
 		#ifdef DEBUG
 		cerr << "Hadoop commands path:" << fr_vars.hadoopcmdpath  << endl;
 		cerr << "Number reducers: " << fr_vars.numreducers << endl;
 		#endif
-
-		if ((fr_vars.query_type == QUERYPROC_NN_VORONOI || fr_vars.query_type == QUERYPROC_NN_RTREE) && fr_vars.join_cardinality <2 ) {
-			cerr << "Missing path for data set 1 or 2" << endl;
-			return false;
-		}
 
 	} catch (exception& e) {
 		cerr << "error here: " << e.what() << "\n";
@@ -192,121 +135,29 @@ second method [fg | bsp | hc | str | bos | slc | qt ]")
 		cerr << "Exception of unknown type!\n";
 		return false;
 	}
+
 	std::stringstream tmpss;
 
-	// Setting up hdfs paths for temporary outputs
+	// updating the paths for output folders
 	tmpss.str("");
-	tmpss << fr_vars.output_path << "_tmp";
-	fr_vars.tmp_path = tmpss.str();
-
-	// Used for MBB Extraction
-	tmpss.str("");
-	if (fr_vars.query_type.compare(QUERYPROC_PARTITION) == 0) {
-		tmpss << fr_vars.output_path  << "/mbb";
-	} else if (fr_vars.query_type.compare(QUERYPROC_JOIN) == 0) {
-		tmpss << fr_vars.output_path  << "_mbb";
-	} else if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
-		tmpss << fr_vars.input_path_1 << "/mbb";
-	} else if (fr_vars.query_type.compare(QUERYPROC_NN_VORONOI) == 0) {
-		tmpss << fr_vars.output_path << "_mbb";
-	} else if (fr_vars.query_type.compare(QUERYPROC_NN_RTREE) == 0) {
-		tmpss << fr_vars.output_path << "_mbb";
-	}
+	tmpss << fr_vars.output_path << "_mbb";
 	fr_vars.mbb_output = tmpss.str();
-		
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_mbb/0";
-	// string mbb_path = mbb_output + "/0";
-	fr_vars.mbb_path = tmpss.str(); // subdirectory of mbb_output
 
 	tmpss.str("");
-	tmpss << fr_vars.output_path << "_mbb2";
-	fr_vars.mbb_output2 = tmpss.str();
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_mbb2/0/part-*";
-	fr_vars.mbb_output2parts = tmpss.str();
-	
-	
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_mbb2/SPACE/part-*";
-	//string space_path = "/SPACE/part-*";
-	fr_vars.space_path2 = tmpss.str(); // subdirectory of mbb_output
-	
+	tmpss << fr_vars.output_path << "_inputresque";
+	fr_vars.resque_input = tmpss.str();
 
-	// Partitioning vars
 	tmpss.str("");
 	tmpss << fr_vars.output_path << "_partidx";;
 	fr_vars.partitionpath = tmpss.str();
-	//string partitionpath = output_path + "_partidx";
-
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_partidx2";
-	fr_vars.partitionpath2 = tmpss.str();
-	//string partitionpath2 = output_path + "_partidx2";
 
 	tmpss.str("");
 	tmpss << fr_vars.partitionpath << "/part*";
 	fr_vars.partitionpathout = tmpss.str();
 	
 	tmpss.str("");
-	tmpss << fr_vars.partitionpath2 << "/part*";
-	fr_vars.partitionpathout2 = tmpss.str();
-	
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_stat";
-	fr_vars.stat_path = tmpss.str();
-	
-	tmpss.str("");
 	tmpss << fr_vars.output_path << "_joinout";
 	fr_vars.joinoutputpath = tmpss.str();
-
-	tmpss.str("");
-	tmpss << fr_vars.stat_path << "/part*";
-	fr_vars.statpathout = tmpss.str();
-
-
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_skeleton";
-	fr_vars.skeleton_3d_output = tmpss.str();
-
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_nnout";
-	fr_vars.nnoutputpath = tmpss.str();
-
-	tmpss.str("");
-	tmpss << fr_vars.output_path << "_nnoutrtree";
-	fr_vars.nnoutputpathrtree = tmpss.str();
-
-	tmpss.str("");
-	tmpss << fr_vars.skeleton_3d_output << "/part*";
-	fr_vars.skeleton_3d_outputout = tmpss.str();
-
-
-	tmpss.str("");
-	if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
-		tmpss << fr_vars.input_path_1 << "/data";
-	} else {
-		tmpss << fr_vars.output_path << "/data";
-	}
-	fr_vars.datapath = tmpss.str();
-	
-	tmpss.str("");
-	if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
-		tmpss << fr_vars.input_path_1;
-	} else {
-		tmpss << fr_vars.output_path;
-	}
-	tmpss << "/partition.idx";
-	fr_vars.partidx_final = tmpss.str();
-
-	tmpss.str("");
-	if (fr_vars.query_type.compare(QUERYPROC_CONTAINMENT) == 0) {
-		tmpss << fr_vars.input_path_1;
-	} else {
-		tmpss << fr_vars.output_path;
-	}
-	tmpss << "/info.cfg";
-	fr_vars.config_final = tmpss.str();
 
 	return true;
 }

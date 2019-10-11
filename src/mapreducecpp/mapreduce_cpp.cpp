@@ -54,9 +54,6 @@ pid_t execute_command(string programpath, vector<string> &strargs, int outputfd)
 		// Parent will read the result from pipefd[0]
 		//	dup2(pipefd[0], STDIN_FILENO);
 		//	close(pipefd[0]);
-		#ifdef DEBUG
-		cerr << "Child pid is " << childpid << endl;
-		#endif
 		if (outputfd != -1) {
 			close(outputfd);
 		}

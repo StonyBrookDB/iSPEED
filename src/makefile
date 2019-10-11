@@ -49,7 +49,7 @@ RC_OBJS := $(patsubst %.c,%.o,$(RC_SRCS))
 
 
 all: queryprocessor_3d  stats_extract_space_dims_3d  manipulate_3d  ppmc  \
-	compress_combine  compress_load  fg_3d ot_3d resque_3d sampler 
+	compress_combine  compress_load  fg_3d ot_3d resque_3d sampler script
 
 queryprocessor_3d: framework/queryprocessor_3d.o mapreducecpp/mapreduce_cpp.o progparams/queryprocessor_params_3d.o
 	$(CXX) $? $(INCFLAGS) $(LIBS) $(CPPFLAGS) -o ${bindir}/$@ -Wno-unused-result
@@ -99,6 +99,9 @@ install:
 	rm -rf ${builddir} && \
 	mkdir ${builddir} && \
 	mkdir ${bindir} && \
+	cp ../script/* ${bindir}/
+	
+script:
 	cp ../script/* ${bindir}/
 
 clean:

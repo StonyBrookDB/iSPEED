@@ -21,18 +21,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 	double low[3], high[3];  // Temporary value placeholders for MBB
 
-
 	try {
-		//std::cerr << "shm add: " << (long) shm << std::endl;
-
-		//std::cerr << "idx1: " << idx1 << std::endl;
-		//std::cerr << "idx2: " << idx2 << std::endl;
-		/* Build index on the "second data set */
-		//std::vector<struct mbb_3d *> geom_mbb2 = sttemp.mbbdata[idx2];
-		//Polyhedron* geom3 = extract_geometry(sttemp.offsetdata[SID_1][0], sttemp.lengthdata[SID_1][0]);
-		//delete geom3;
-
-
 		#ifdef DEBUG
 		std::cerr<<"start building r-tree index"<<std::endl;
 		time_t rtree_st, rtree_et;
@@ -47,7 +36,6 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			#endif
 			return -1;
 		}
-
 
 		#ifdef DEBUG
 		time(&rtree_et);
@@ -67,17 +55,7 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 		std::vector<struct mbb_3d *> geom_mbb1 = sttemp.mbbdata[idx1];
 		for (int i = 0; i < geom_mbb1.size(); i++) {
-
-			// Extract geometry from compressed data in the shared memeory segment
-			//std::cerr << "obj: " << i << std::endl;
-			//std::cerr << "offset: " << sttemp.offsetdata[idx1][i] << std::endl;
-			//std::cerr << "length: " << sttemp.lengthdata[idx1][i] << std::endl;
-			//Polyhedron* geom1 = extract_geometry(sttemp.offsetdata[idx1][i], sttemp.lengthdata[idx1][i],
-			//		stop.decomp_lod, stop, sttemp, 0);
-
 			/* Extract minimum bounding box */
-			//Polyhedron* geom1 = poly_set_one[i];
-			//std::cerr << "before Got MBB1!" << std::endl;
 			struct mbb_3d * env1 = geom_mbb1[i];
 			low[0] = env1->low[0];
 			low[1] = env1->low[1];
@@ -104,82 +82,22 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 			if(vis.matches.size()==0){
 				continue;
 			}
-			#ifdef DEBUG
-			std::cerr<<vis.matches.size()<<" objects in dataset 2 is matched"<<std::endl;
-			#endif
 
-			/*#ifdef DEBUG
-			time(&mbb_et);
-			rtree_tt = difftime(mbb_et,mbb_st);
-			std::cerr << "********************************************" << std::endl;
-			std::cerr << "One MBB filtering total execution time: "
-				<< mbb_tt
-				<< " seconds." << std::endl;
-			std::cerr << "********************************************" << std::endl;
-			#endif*/
-
-			// This is where iSPEED difference from Hadoopgis starts:
-
+			// checking true intersection
 			Polyhedron *geom1 = extract_geometry(sttemp.offsetdata[idx1][i],
 					sttemp.lengthdata[idx1][i], stop.decomp_lod);
-
 			for (uint32_t j = 0; j < vis.matches.size(); j++){
-
-				/* Skip results that have been seen before (self-join case) */
-				/*
-				if (selfjoin && ((vis.matches[j] == i) ||  // same objects in self-join
-				    (!stop.result_pair_duplicate && vis.matches[j] <= i))) { // duplicate pairs
-					#ifdef DEBUG
-					std::cerr << "skipping (selfjoin): " << j << " " << vis.matches[j] << std::endl;
-					#endif
-					continue;
-				}
-				*/
-
 				Polyhedron *geom2 = extract_geometry(sttemp.offsetdata[idx2][vis.matches[j]],
 					sttemp.lengthdata[idx2][vis.matches[j]], stop.decomp_lod);
 				struct mbb_3d * env2 = sttemp.mbbdata[idx2][vis.matches[j]];
-
-				// for now only decomp time
-				//std::cout << i << TAB << vis.matches[j] << std::endl;
-				#ifdef DEBUG
-				std::cerr << "Checking actual intersection between " << i << TAB << vis.matches[j] << std::endl;
-				time_t geometry_st, geometry_et;
-				double geometry_tt;
-				time(&geometry_st);
-				#endif
-
-				if (join_with_predicate(stop, sttemp, *geom1, *geom2, env1, env2,
-							stop.join_predicate))  {
-					//	report_result(stop, sttemp, i, vis.matches[j]);
-					#ifdef DEBUG
-					std::cerr << "Actual intersected with each other " << i << TAB << vis.matches[j] << std::endl;
-					#endif
-					pairs++;
-				}else{
-					#ifdef DEBUG
-					std::cerr << "not intersected with each other " << i << TAB << vis.matches[j] << std::endl;
-					#endif
-				}
-
-				#ifdef DEBUG
-				time(&geometry_et);
-				geometry_tt = difftime(geometry_et,geometry_st);
-				std::cerr << "********************************************" << std::endl;
-				std::cerr << "One geometry spatial refinement total execution time: "
-					<< geometry_tt
-					<< " seconds." << std::endl;
-				std::cerr << "********************************************" << std::endl;
-				#endif
+				pairs += join_with_predicate(stop, geom1, geom2);
 				delete geom2;
 			}
 			delete geom1;
 		}
 	} catch (Tools::Exception& e) {
 		std::cerr << "******ERROR******" << std::endl;
-		#ifdef DEBUG
 		std::cerr << e.what() << std::endl;
-		#endif
 		return -1;
 	} // end of catch
 
@@ -190,189 +108,50 @@ int join_bucket_spjoin(struct query_op &stop, struct query_temp &sttemp) {
 
 
 /* Perform (Refine) spatial computation between 2 geometry objects */
-bool join_with_predicate(
-		struct query_op &stop, struct query_temp &sttemp,
-		Polyhedron &geom1 , Polyhedron &geom2,
-		const struct mbb_3d * env1, const struct mbb_3d * env2,
-		const int jp){
-	bool flag = false; // flag == true means the predicate is satisfied
-
-	//BufferOp * buffer_op1;
-	//BufferOp * buffer_op2;
-	Polyhedron* geom_buffer1;
-	Polyhedron* geom_buffer2;
-	Polyhedron* geomUni;
-	Polyhedron* geomIntersect;
-
-
-	#ifdef DEBUG
-
-	#endif
-
-	switch (jp){
+bool join_with_predicate(struct query_op &stop,Polyhedron *geom1 , Polyhedron *geom2){
+	bool flag = false;
+	// we currently support only intersects
+	// which can be easily extended to other operations
+	// like touch, cross, contains, within etc.
+	switch (stop.join_predicate){
 		case ST_INTERSECTS:
-			flag = intersects(geom1, geom2, env1, env2);
+			flag = intersects(geom1, geom2);
 			break;
-
-		/*#ifdef SKIP2D // skip other spatial operations for now
-		case ST_TOUCHES:
-			flag = geom1->touches(geom2);
-			break;
-
-		case ST_CROSSES:
-			flag = geom1->crosses(geom2);
-			break;
-
-		case ST_CONTAINS:
-			flag = env1->contains(env2) && geom1->contains(geom2);
-			break;
-
-		case ST_ADJACENT:
-			flag = !geom1->disjoint(geom2);
-			break;
-
-		case ST_DISJOINT:
-			flag = geom1->disjoint(geom2);
-			break;
-
-		case ST_EQUALS:
-			flag = env1->equals(env2) && geom1->equals(geom2);
-			break;
-		*/
-		//case ST_DWITHIN:
-			/* Special spatial handling for the point-point case */
-			//if (geom1->getGeometryTypeId() == geos::geom::GEOS_POINT
-			//	&& geom2->getGeometryTypeId() == geos::geom::GEOS_POINT) 				{
-				/* Replace with spherical distance computation if points are on eath */
-			/*	if (stop.use_earth_distance) {
-					flag = get_distance_earth(
-						dynamic_cast<const geos::geom::Point*>(geom1),
-						dynamic_cast<const geos::geom::Point*>(geom2))
-						<= stop.expansion_distance;
-				} else {
-					flag = DistanceOp::distance(geom1, geom2)
-						<= stop.expansion_distance;
-				}*/
-
-				/* flag = distance(
-					dynamic_cast<const geos::geom::Point*>(geom1),
-					dynamic_cast<const geos::geom::Point*>(geom2) )
-					 <= stop.expansion_distance; */
-			//}
-			/*else {
-				// Regular handling for other object types
-				buffer_op1 = new BufferOp(geom1);
-				// buffer_op2 = new BufferOp(geom2);
-				if (NULL == buffer_op1)
-					std::cerr << "NULL: buffer_op1" <<std::endl;
-				geom_buffer1 = buffer_op1->getResultGeometry(stop.expansion_distance);
-				env1 = geom_buffer1->getEnvelopeInternal();
-				// geom_buffer2 = buffer_op2->getResultGeometry(expansion_distance);
-				//Envelope * env_temp = geom_buffer1->getEnvelopeInternal();
-				if (NULL == geom_buffer1) {
-					std::cerr << "NULL: geom_buffer1" << std::endl;
-				}
-				flag = join_with_predicate(stop, sttemp, geom_buffer1, geom2,
-					env1, env2, ST_INTERSECTS);
-				delete geom_buffer1;
-				delete buffer_op1;
-			}
-			break;
-
-		case ST_WITHIN:
-			flag = geom1->within(geom2);
-			break;
-
-		case ST_OVERLAPS:
-			flag = geom1->overlaps(geom2);
-			break;*/
-		/*
-		case ST_NEAREST:
-		case ST_NEAREST_2:
-			// Execution only reaches here if this is already the nearest neighbor
-			flag = true;
-			break;
-		*/
-		//#endif
-
 		default:
 			std::cerr << "ERROR: unknown spatial predicate " << std::endl;
 			break;
 	}
 	/* Spatial computation is only performed once for a result pair */
 	if (flag) {
+		Nef_polyhedron *N1 = NULL;
+		Nef_polyhedron *N2 = NULL;
 
 		if (stop.needs_volume_1) {
-			Nef_polyhedron N1(geom1);
-			sttemp.volume1 = get_volume(N1);
+			N1 = new Nef_polyhedron(*geom1);
+			cerr<<get_volume(*N1)<<endl;
 		}
 
 		if (stop.needs_volume_2) {
-			Nef_polyhedron N2(geom2);
-			sttemp.volume2 = get_volume(N2);
+			N2 = new Nef_polyhedron(*geom2);
+			cerr<<get_volume(*N2)<<endl;
 		}
 
 		// Slow because of this
 		if (stop.needs_intersect_volume) {
-
-//			istringstream poly1str;
-//			poly1str << geom1;
-//			istringstream poly2str;
-//			poly1str << geom2;
-//			Nef_polyhedron N1;
-//			Nef_polyhedron N2;
-//			CGAL::OFF_to_nef_3(poly1str, N1);
-//			CGAL::OFF_to_nef_3(poly2str, N2);
-
-			Nef_polyhedron N1(geom1);
-			Nef_polyhedron N2(geom2);
-			Nef_polyhedron Inter = N1 * N2;
-			assert(Inter.number_of_vertices()>0&&"Those two polygedrons should be intersected");
-			sttemp.intersect_volume = get_volume(Inter);
+			if(N1==NULL){
+				N1 = new Nef_polyhedron(*geom1);
+			}
+			if(N2==NULL){
+				N2 = new Nef_polyhedron(*geom2);
+			}
+			Nef_polyhedron Inter = (*N1) * (*N2);
+			assert(Inter.number_of_vertices()>0
+					&&"Those two polygedrons should be intersected");
+			cerr<<get_volume(Inter)<<endl;
 			Inter.clear();
-			N1.clear();
-			N2.clear();
+			delete N1;
+			delete N2;
 		}
-
-		/*#ifdef SKIP2D // skip 2d cases
-		if (stop.needs_area_1) {
-			sttemp.area1 = geom1->getArea();
-		}
-		if (stop.needs_area_2) {
-			sttemp.area2 = geom2->getArea();
-		}
-		if (stop.needs_union) {
-			Geometry * geomUni = geom1->Union(geom2);
-			sttemp.union_area = geomUni->getArea();
-			delete geomUni;
-		}
-		if (stop.needs_intersect) {
-			Geometry * geomIntersect = geom1->intersection(geom2);
-			sttemp.intersect_area = geomIntersect->getArea();
-			delete geomIntersect;
-		}*/
-		/* Statistics dependent on previously computed statistics */
-		/*if (stop.needs_jaccard) {
-			sttemp.jaccard = compute_jaccard(sttemp.union_area, sttemp.intersect_area);
-		}
-
-		if (stop.needs_dice) {
-			sttemp.dice = compute_dice(sttemp.area1, sttemp.area2, sttemp.intersect_area);
-		}
-
-		if (stop.needs_min_distance) {
-			if (stop.use_earth_distance
-				&& geom1->getGeometryTypeId() == geos::geom::GEOS_POINT
-				&& geom2->getGeometryTypeId() == geos::geom::GEOS_POINT) 				{
-				sttemp.distance = get_distance_earth(
-						dynamic_cast<const geos::geom::Point*>(geom1),
-						dynamic_cast<const geos::geom::Point*>(geom2));
-			}
-			else {
-				sttemp.distance = DistanceOp::distance(geom1, geom2);
-			}
-		}
-		#endif*/
 	}
 	return flag;
 }

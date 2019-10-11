@@ -17,7 +17,6 @@ using namespace std;
  * */
 int join_bucket_nn_voronoi(struct query_op &stop, struct query_temp &sttemp) {
 
-	assert(stop.join_cardinality == 2 && "cannot do self nearest neighbor query");
 	/* Indicates where original data is mapped to */
 	int idx1 = SID_1;
 	int idx2 = SID_2;

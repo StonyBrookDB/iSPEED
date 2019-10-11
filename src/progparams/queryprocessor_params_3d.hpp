@@ -40,13 +40,6 @@ const std::string STAT_COLLECT_REDUCER = "combine_stat";
 const std::string MBB_SAMPLER = "sampler";
 
 const std::string RESQUE = "resque_3d";
-const std::string PARTITION_FG = "fg_2d";
-const std::string PARTITION_BSP = "bsp_2d";
-const std::string PARTITION_SFC = "hc_2d";
-const std::string PARTITION_BOS = "bos_2d";
-const std::string PARTITION_STR = "str_2d";
-const std::string PARTITION_SLC = "slc_2d";
-const std::string PARTITION_QT = "qt_2d";
 
 // for 3d
 const std::string PARTITION_FG_3D = "fg_3d";
@@ -61,6 +54,16 @@ struct space_info {
 	double total_size;
 } ;
 
+enum Operation{
+	COMPRESS = 0,
+	PARTITION = 1,
+	JOIN = 2,
+	DUPLICATE_REMOVAL = 3,
+	ERROR = 4
+};
+
+const string operation_str[5] = {"compress", "partition", "join", "duplicate_removal", "error"};
+
 
 // Manages piped I/O
 struct flow_info;
@@ -69,87 +72,50 @@ struct framework_vars;
 // Combined framework variables
 struct framework_vars {
 	
-	// Compression or spatial processing mode
-	int comp_mode;
-
 	// MapReduce-related parameter
-	//
-	std::string hadoopgis_prefix;
+	std::string binary_prefix;
 	std::string streaming_path; // Absolute path to the hadoop streaming jar
 	std::string hadoopcmdpath; // Absolute path to the command line hadoop executable
 	std::string hdfscmdpath; // Absolute path to the command line hadoop executable
-	std::string hadoopldlibpath; // LD_LIBRARY_PATH on the system
-	bool overwritepath; // Overwrite HDFS directory if it already exists
-	int numreducers; // number of reducer
+
+	bool overwritepath = true; // Overwrite HDFS directory if it already exists
+	int numreducers = 1; // number of reducer
 	std::string compressed_data_path;
+	long size_of_compressed_data = -1;
 
 	struct space_info spinfo;
 
 	// Input data variables	
 	std::string input_path_1;
 	std::string input_path_2;
-	long size_1;
-	long size_2;
-	double obtain_size_1;
-	double obtain_size_2;
-	int join_cardinality;
-	// 3d compression
-	int decomp_lod;
+	long size_1 = -1;
+	long size_2 = -1;
+	int join_cardinality = 1;
 	
 	// Query variables
-	std::string output_path;
-	std::string query_type;
+	Operation query_type;
+
+	//for resque
 	std::string predicate;
 	double distance;
-	bool containment_use_file;
+	int decomp_lod = 100;
 
-	std::string user_file;
-	std::string containment_window;
 
 	// Partitioning variables
-	std::string partition_method; // Default selection
-	std::string partition_method_2; // Default selection
-	std::string partitioningparams;
-	double sampling_rate; // to be changed for different sampling method
-	long bucket_size;
-	bool para_partition;
-	long block_size;
-	long rough_bucket_size;
-	
-	std::string mbb_path_1;
-	std::string mbb_path_2;
-
-	// Cleanup flags
-	bool remove_tmp_dirs;
-	bool remove_tmp_mbb;
+	std::string partition_method = PARTITION_FG_3D; // Default selection
+	double sampling_rate = 1; // to be changed for different sampling method
+	long bucket_size = -1;
 
 	// Temporary paths
-	std::string tmp_path;
+	std::string output_path;
+
 	std::string mbb_output;
-	std::string mbb_path;
-	std::string mbb_output2;
-	std::string mbb_output2parts;
-	std::string space_path;
-	std::string space_path2;
+	std::string resque_input;
 	std::string partitionpath;
-	std::string partitionpath2;
 	std::string partitionpathout;
-	std::string partitionpathout2;
-	std::string stat_path;
 	std::string joinoutputpath;
-	std::string statpathout;
-	std::string datapath;	
-	std::string partidx_final;
-	std::string config_final;
-	// for 3d
-	std::string skeleton_3d_output;
-	std::string skeleton_3d_outputout;
-	std::string voronoi_3d_output;
-	std::string nnoutputpath;
-	std::string nnoutputpathrtree;
 };
 
-void init_params(struct framework_vars &fr_vars);
 bool extract_params(int argc, char **argv, struct framework_vars &fr_vars);
 
 #endif

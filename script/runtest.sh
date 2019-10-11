@@ -1,7 +1,23 @@
 #!/bin/bash
-sh clean.sh
-queryprocessor_3d -q spjoin -a /user/teng/test1/input1 -b /user/teng/test1/input2 -h /user/teng/test1/output \
-	 --binpath ./ --compressed_data_path /tmp/allbin -o --compression 
-runcombiner.sh /user/teng/test1/output
-queryprocessor_3d -q spjoin -a /user/teng/test1/input1 -b /user/teng/test1/input2 -h /user/teng/test1/output \
-     --binpath ./ --compressed_data_path /tmp/allbin -u fg_3d -n 1 --spatialproc -t st_intersects
+root_folder="/user/teng/test1"
+input_1="input1_tiny"
+input_2="input2_tiny"
+output_folder="output"
+predicate_type="st_intersects"
+
+clean.sh
+
+#firstly: compress the data
+queryprocessor_3d -q compress -o $root_folder/$output_folder --binpath ./ \
+	-a $root_folder/$input_1 -b $root_folder/$input_2 
+
+#secondly: combine the compressed data and mbbs
+runcombiner.sh "$root_folder/$output_folder"
+
+#thirdly: partition the space 
+queryprocessor_3d -q partition -o $root_folder/$output_folder --binpath ./ \
+	--compressed_data_path /tmp/allbin -t fg_3d
+
+#forthly: do the join
+queryprocessor_3d -q join -o $root_folder/$output_folder --binpath ./ \
+	-a $root_folder/$input_1 -b $root_folder/$input_2 --compressed_data_path /tmp/allbin -p $predicate_type

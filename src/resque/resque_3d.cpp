@@ -38,10 +38,6 @@ int main(int argc, char** argv)
 	}
 	// Query execution
 	// Spatial join and nearest neighbors from joint datasets (stdin)
-
-	assert(stop.join_cardinality==1||stop.join_cardinality==2);
-	stop.sid_second_set = stop.join_cardinality == 1 ? SID_1 : SID_2;
-
 	c = execute_query(stop, sttemp);
 	if (c >= 0 ) {
 		std::cerr << "Query Load: [" << c << "]" << std::endl;
@@ -90,7 +86,7 @@ int join_bucket(struct query_op &stop, struct query_temp &sttemp){
 		pairs = join_bucket_spjoin(stop, sttemp);
 	}
 	std::cerr <<"Special T[" << sttemp.tile_id << "] |" << sttemp.mbbdata[SID_1].size()
-			  << "|x|" << sttemp.mbbdata[stop.sid_second_set].size()
+			  << "|x|" << sttemp.mbbdata[stop.join_cardinality].size()
 		      << "|=|" << pairs << "|" << std::endl;
 	total_query_exec += clock() - start_query_exec;
 	start_reading_data = clock();
@@ -136,7 +132,7 @@ int execute_query(struct query_op &stop, struct query_temp &sttemp)
 #ifdef DEBUG
 		// the input is in format (11 fields):
 		// partition_id object_id dataset_id mbbs*6 offset length
-		//std::cerr<<input_line<<std::endl;
+		std::cerr<<input_line<<std::endl;
 #endif
 		/* Parsing fields from input */
 		tile_id = fields[0];

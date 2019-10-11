@@ -23,9 +23,6 @@ clock_t total_query_exec;
 
 
 
-// for sp join yes or no intersection
-bool intersection_flag = false;
-
 char * shm_ptr = NULL;
 //long maxoffset = 0;
 
@@ -266,22 +263,21 @@ void extract_skeleton_advance(long offset, long length, unsigned i_decompPercent
 }
 
 
-void get_triangle(Polyhedron P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr){
+void get_triangle(Polyhedron *P, std::vector<Triangle>& triangles,  std::vector<Box>& boxes, std::vector<Box*>& ptr){
+	for ( Facet_const_iterator i = P->facets_begin(); i != P->facets_end(); ++i){
+		Triangle t(i->halfedge()->vertex()->point(),
+				   i->halfedge()->next()->vertex()->point(),
+				   i->halfedge()->next()->next()->vertex()->point());
+		triangles.push_back(t);
+	}
+	// Create the corresponding std::vector of bounding boxes
+	for ( Iterator i = triangles.begin(); i != triangles.end(); ++i){
+		boxes.push_back(Box(i->bbox(), i));
+	}
 
-	 // std::vector<Box> boxes;
-	 for ( Facet_const_iterator i = P.facets_begin(); i != P.facets_end(); ++i){
-		triangles.push_back(
-		    Triangle( i->halfedge()->vertex()->point(),
-			i->halfedge()->next()->vertex()->point(),
-			i->halfedge()->next()->next()->vertex()->point()));
-
-	  }
-	 // Create the corresponding std::vector of bounding boxes
-	  for ( Iterator i = triangles.begin(); i != triangles.end(); ++i)
-	    boxes.push_back(Box( i->bbox(), i));
-
-	  for ( std::vector<Box>::iterator i = boxes.begin(); i != boxes.end(); ++i)
-	    ptr.push_back( &*i);
+	for ( std::vector<Box>::iterator i = boxes.begin(); i != boxes.end(); ++i){
+		ptr.push_back( &*i);
+	}
 }
 
 
@@ -291,55 +287,59 @@ bool intersects_mbb(const struct mbb_3d * m1, const struct mbb_3d *m2) {
 	      || m1->low[2] > m2->high[2] || m1->high[2] < m2->low[2] );
 }
 
+// testing intersecting between polyhedrons
+bool intersection_flag = false;
+//struct Report {
+//  Triangles* triangles;
+//  Triangles* cell_triangles;
+//
+//  Report(Triangles& triangles, Triangles& cell_triangles)
+//    : triangles(&triangles), cell_triangles(&cell_triangles)
+//  {}
+//
+//  // callback functor that reports all truly intersecting triangles
+//  void operator()(const Box* a, const Box* b) const
+//  {
+//    if (intersection_flag) {
+//    	return;
+//    }
+//    if ( ! a->handle()->is_degenerate() && ! b->handle()->is_degenerate()
+//         && CGAL::do_intersect( *(a->handle()), *(b->handle()))) {
+//      intersection_flag = true;
+//    }
+//  }
+//};
+struct Report {
 
-bool intersects(Polyhedron &P1, Polyhedron &P2, const struct mbb_3d * env1, const struct mbb_3d * env2) {
-	//return true;
+  Report(){}
+
+  // callback functor that reports all truly intersecting triangles
+  void operator()(const Box* a, const Box* b) const
+  {
+    if (intersection_flag) {
+    	return;
+    }
+    if ( ! a->handle()->is_degenerate() && ! b->handle()->is_degenerate()
+         && CGAL::do_intersect( *(a->handle()), *(b->handle()))) {
+      intersection_flag = true;
+    }
+  }
+};
+bool intersects(Polyhedron *P1, Polyhedron *P2) {
+
 	// Use Nef_polyhedron for intersection detection
-	if(!intersects_mbb(env1, env2))
-		return false;
-	else{
-		Triangles triangles1, triangles2;
-		std::vector<Box> boxes1, boxes2;
-		std::vector<Box*> boxes1_ptr, boxes2_ptr;
+	Triangles triangles1, triangles2;
+	std::vector<Box> boxes1, boxes2;
+	std::vector<Box*> boxes1_ptr, boxes2_ptr;
 
-		get_triangle(P1, triangles1, boxes1, boxes1_ptr);
-		get_triangle(P2, triangles2, boxes2, boxes2_ptr);
+	get_triangle(P1, triangles1, boxes1, boxes1_ptr);
+	get_triangle(P2, triangles2, boxes2, boxes2_ptr);
 
-		intersection_flag = false;
-
-		CGAL::box_intersection_d( boxes1_ptr.begin(), boxes1_ptr.end(), boxes2_ptr.begin(), boxes2_ptr.end(), Report(triangles1, triangles2));
-
-		/*std::cout << "yes or no: " << intersection_flag << std::endl; // to compare * operator and yes or no question
-
-		// use * operator for intersection detection
-		if(P1->is_closed() && P2->is_closed()) {
-			//std::cerr << "got here 1" << std::endl;
-			Nef_polyhedron N1(*P1);
-			Nef_polyhedron N2(*P2);
-			//std::cerr << "got here 2" << std::endl;
-		//	return true;
-			Nef_polyhedron inputpoly = N1 * N2;
-
-			bool star_flag = false;
-			if(inputpoly.number_of_vertices() > 0) { star_flag = true; }
-			else { star_flag = false; }
-
-			std::cout << "*: " << star_flag << std::endl;
-		}
-		else
-			std::cerr << "ERROR: Polyhedron is not closed!" << std::endl;*/
-
-
-		/*if(inputpoly.number_of_vertices() > 0) { return true; }
-		else { return false; }
-		}
-		else
-			std::cerr << "ERROR: Polyhedron is not closed!" << std::endl;*/
-
-		return intersection_flag;
-	}
-
-	return false;
+	intersection_flag = false;
+	CGAL::box_intersection_d( boxes1_ptr.begin(), boxes1_ptr.end(),
+							  boxes2_ptr.begin(), boxes2_ptr.end(),
+							  Report());
+	return intersection_flag;
 }
 
 double get_volume(Nef_polyhedron &inputpoly) {
@@ -361,8 +361,8 @@ double get_volume(Nef_polyhedron &inputpoly) {
 			}
 		}
 	}
-	//std::cout<< "# of Polyhedrons: " << PList.size() <<std::endl;
-	// triangulate the polyhedrons to generate mesh and use terahedron to calculate volumes
+	// std::cerr<< "# of Polyhedrons: " << PList.size() <<std::endl;
+	// triangulate the polyhedrons to generate mesh and use tetrahedron to calculate volumes
 	Polyhedron poly;
 	double total_volume = 0, hull_volume = 0;
 	for(int i = 0; i < PList.size(); i++) {
