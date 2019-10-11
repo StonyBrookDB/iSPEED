@@ -22,7 +22,8 @@
 
 #include <boost/program_options.hpp>
 #include "mapreduce_cpp.hpp"
-#include "progparams/string_constants.h"
+
+#include "../progparams/global_define.h"
 
 using namespace std;
 

@@ -48,11 +48,8 @@ void attach_shm(struct query_op &stop){
 }
 
 /* Release objects in memory (for the current tile/bucket) */
-void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard) {
-	if (stop.join_cardinality <= 0) {
-		return ;
-	}
-	for (int j = 0; j < stop.join_cardinality && j < maxCard; j++ ) {
+void release_mem(struct query_op &stop, struct query_temp &sttemp) {
+	for (int j = 0; j < 2; j++ ) {
 		int delete_index = j + 1; // index are adjusted to start from 1
 		int len = sttemp.mbbdata[delete_index].size();
 		for (int i = 0; i < len ; i++) {

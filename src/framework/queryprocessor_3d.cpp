@@ -112,10 +112,8 @@ bool compress_data(struct framework_vars &fr_vars) {
 	
 	arr_args.push_back("-input");
 	arr_args.push_back(fr_vars.input_path_1);
-	if (fr_vars.join_cardinality > 1) {
-		arr_args.push_back("-input");
-		arr_args.push_back(fr_vars.input_path_2);
-	}
+	arr_args.push_back("-input");
+	arr_args.push_back(fr_vars.input_path_2);
 
 	arr_args.push_back("-output");
 	arr_args.push_back(fr_vars.mbb_output);
@@ -251,9 +249,8 @@ bool join_data(struct framework_vars &fr_vars, char *cachefilefullpath) {
 	ss.str("");
 	ss <<RESQUE
 	   <<" -l "<<fr_vars.decomp_lod
-	   <<" -j "<<fr_vars.join_cardinality
 	   <<" -p "<<fr_vars.predicate
-	   <<" -s "<<fr_vars.size_of_compressed_data;
+	   <<" -s "<<fr_vars.spinfo.total_size;
 	arr_args.push_back(ss.str()); // Offset to account for tile id and join index
 
 	arr_args.push_back("-numReduceTasks");
@@ -276,28 +273,6 @@ bool join_data(struct framework_vars &fr_vars, char *cachefilefullpath) {
 	return false;
 }
 
-
-inline void profile_raw_data(struct framework_vars &fr_vars){
-	// Find the size of datasets 1 and 2
-	fr_vars.size_1 = hdfs_get_size(fr_vars.hadoopcmdpath, fr_vars.input_path_1);
-	fr_vars.spinfo.total_size = fr_vars.size_1;
-
-	// If there is a 2nd dataset, also check if it has been loaded and obtain its size
-	if (fr_vars.join_cardinality > 1) {
-		// loaded_2 = hdfs_check_data(hadoopcmdpath, input_path_2 + "/" + PARTITION_FILE_NAME);
-		fr_vars.size_2 = hdfs_get_size(fr_vars.hadoopcmdpath, fr_vars.input_path_2);
-		if (fr_vars.size_2 >= 0) {
-			fr_vars.spinfo.total_size += fr_vars.size_2;
-		}
-	}
-
-	cerr << "Total size of 1 " << fr_vars.size_1 << endl;
-	if (fr_vars.join_cardinality > 1) {
-		cerr << "Total size of 2 " << fr_vars.size_2 << endl;
-	}
-	cerr << "Total object size: " << fr_vars.spinfo.total_size << endl;
-}
-
 inline void profile_compressed_data(struct framework_vars &fr_vars){
 	// we assume the combiner already been executed and the
 	// space information can be retrieved from the combined binary file.
@@ -307,9 +282,9 @@ inline void profile_compressed_data(struct framework_vars &fr_vars){
 		std::cerr<<"error reading compressed file "<<fr_vars.compressed_data_path<<std::endl;
 		exit(0);
 	}
-	fr_vars.size_of_compressed_data = results.st_size;
+	fr_vars.spinfo.total_size = results.st_size-6*sizeof(double)-sizeof(long);
 	int fd = open(fr_vars.compressed_data_path.c_str(), O_RDONLY);
-	lseek(fd,results.st_size-6*sizeof(double)-sizeof(long),SEEK_CUR);
+	lseek(fd,fr_vars.spinfo.total_size, SEEK_CUR);
 	read(fd,fr_vars.spinfo.space_low,3*sizeof(double));
 	read(fd,fr_vars.spinfo.space_high,3*sizeof(double));
 	read(fd,&fr_vars.spinfo.num_objects,sizeof(long));
@@ -324,8 +299,6 @@ inline void profile_compressed_data(struct framework_vars &fr_vars){
 void execute_compress(struct framework_vars &fr_vars){
 
 	cerr << "\nExecuting compressing\n"<< endl;
-	profile_raw_data(fr_vars);
-
 	// compress the input data
 	// -- Extract object MBB and grab space dimension
 	// -- and compress data at the same time to binary files
@@ -364,7 +337,7 @@ void execute_partition(struct framework_vars &fr_vars){
 		// Bucket size was not set
 		double blockSize = 16000000; // approximately 16MB
 		fr_vars.bucket_size = max(static_cast<int>(floor(
-				blockSize/fr_vars.size_of_compressed_data*fr_vars.spinfo.num_objects)), 1);
+				blockSize/fr_vars.spinfo.total_size*fr_vars.spinfo.num_objects)), 1);
 	}
 	cerr << "Bucket size: " << fr_vars.bucket_size << endl;
 	if (fr_vars.overwritepath || !hdfs_check_data(fr_vars.hadoopcmdpath, fr_vars.partitionpath)) {
@@ -383,10 +356,11 @@ void execute_partition(struct framework_vars &fr_vars){
 void execute_spjoin(struct framework_vars &fr_vars) {
 	profile_compressed_data(fr_vars);
 
+	char tmpFile[256];
+	strcpy(tmpFile, nametemplate);
 	cerr << "\nExecuting spatial joins\n" << endl;
 	//generate a temporary file for storing the partition information
-	int tmpfd = mkstemp(nametemplate);
-	char *tmpFile = nametemplate;
+	int tmpfd = mkstemp(tmpFile);
 	close(tmpfd);
 	tmpfd = open(tmpFile, O_RDWR | O_CREAT | O_TRUNC , 0777);
 	if(!hdfs_cat(fr_vars.hadoopcmdpath, fr_vars.partitionpathout, tmpfd)){

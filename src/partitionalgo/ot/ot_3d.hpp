@@ -7,12 +7,12 @@
 #include <vector>
 #include <cstdlib> 
 
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
 #include <progparams/partition_params_3d.hpp>
 
 #include <boost/program_options.hpp>
+#include "../../progparams/global_define.h"
 
 static int GLOBAL_MAX_LEVEL = 10000000;
 

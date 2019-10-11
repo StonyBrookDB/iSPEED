@@ -4,7 +4,8 @@
 #include <map>
 #include <unistd.h>
 #include <getopt.h>
-#include <progparams/string_constants.h>
+
+#include "global_define.h"
 
 #define NUMBER_DIMENSIONS 3
 
@@ -18,7 +19,7 @@ struct mbb_info {
 /* Query operator */
 struct partition_op {
 	long bucket_size;
-	int offset; // Field offset
+	int offset = 1; // Field offset
 	std::string prefix_tile_id;
 	int object_count;
 
@@ -27,8 +28,8 @@ struct partition_op {
 	double high[3];
 
 	/* only at most one can be true  */
-	bool to_be_normalized;
-	bool to_be_denormalized;
+	bool to_be_normalized = false;
+	bool to_be_denormalized = false;
 
 	bool parallel_partitioning;
 	std::string file_name;

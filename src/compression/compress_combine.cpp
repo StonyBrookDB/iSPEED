@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <boost/program_options.hpp>
 
-#include "progparams/string_constants.h"
+#include "../progparams/global_define.h"
 #include "utilities/tokenizer.h"
 
 #define NUMBER_DIMENSIONS 3

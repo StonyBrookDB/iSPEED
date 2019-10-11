@@ -9,10 +9,10 @@
 #include <boost/program_options.hpp>
 #include <utilities/Timer.hpp>
 
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
 #include <progparams/partition_params_3d.hpp>
+#include "../../progparams/global_define.h"
 
 // global vars
 std::string prefix_tile_id = "FG";

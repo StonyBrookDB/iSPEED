@@ -61,16 +61,12 @@ int main(int argc, char** argv)
 /*dispatch joins to target module*/
 int join_bucket(struct query_op &stop, struct query_temp &sttemp){
 
-	assert(stop.join_cardinality == 2 && "cannot conduct nn on same data set");
-
 	//return if either one dataset is empty
  	if (sttemp.mbbdata[SID_1].size() <= 0 || sttemp.mbbdata[SID_2].size() <= 0) {
 		return 0;
 	}
 
 	/* Define the resource when using cache-file  */
-	//int maxCardRelease = std::min(stop.join_cardinality, 2);
-	int maxCardRelease = 2;
 	total_reading += clock() - start_reading_data;
 	start_query_exec = clock();
 	// Process the current tile in memory
@@ -86,11 +82,11 @@ int join_bucket(struct query_op &stop, struct query_temp &sttemp){
 		pairs = join_bucket_spjoin(stop, sttemp);
 	}
 	std::cerr <<"Special T[" << sttemp.tile_id << "] |" << sttemp.mbbdata[SID_1].size()
-			  << "|x|" << sttemp.mbbdata[stop.join_cardinality].size()
+			  << "|x|" << sttemp.mbbdata[SID_2].size()
 		      << "|=|" << pairs << "|" << std::endl;
 	total_query_exec += clock() - start_query_exec;
 	start_reading_data = clock();
-	release_mem(stop, sttemp, maxCardRelease);
+	release_mem(stop, sttemp);
 	return pairs;
 }
 

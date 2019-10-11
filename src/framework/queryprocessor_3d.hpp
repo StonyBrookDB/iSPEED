@@ -24,7 +24,7 @@
 	using namespace boost::accumulators;
 #endif
 
-#include <progparams/string_constants.h>
+#include "../progparams/global_define.h"
 #include <utilities/tokenizer.h>
 
 

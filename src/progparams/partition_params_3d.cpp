@@ -14,12 +14,6 @@
 
 namespace po = boost::program_options;
 
-void init_params_partitioning(struct partition_op & partop) {
-	partop.to_be_normalized = false;
-	partop.to_be_denormalized = false;
-	partop.offset = 1; // Default offset
-}
-
 // Read the cache file containing MBB of regions
 bool read_partition_file(struct partition_op &partop) {
 	std::string inputline;
@@ -65,7 +59,6 @@ void update_partop_info(struct partition_op & partop, std::string uppertileid, s
 
 /* Extract parameters for partitioning */
 bool extract_params_partitioning(int ac, char** av, struct partition_op & partop){ 
-	init_params_partitioning(partop);
 	try {
 		po::options_description desc("Options");
 		desc.add_options()

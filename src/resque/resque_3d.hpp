@@ -50,16 +50,15 @@
 
 #include <spatialindex/SpatialIndex.h>
 
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
 //#include <extensions/rtree3d/rtree_traversal_3d.h>
 
 // Constants
-#include <progparams/resque_constants_3d.h>
 // Program parameters
 #include <PPMC/configuration.h>
 #include <PPMC/mymesh.h>
+#include "../progparams/global_define.h"
 #include "../progparams/resque_params_3d.hpp"
 
 typedef CGAL::Bbox_3                                     Bbox;
@@ -165,7 +164,7 @@ extern clock_t total_query_exec;
 void attach_shm(struct query_op &stop);
 
 int read_cache_file(struct query_op &stop, struct query_temp &sttemp);
-void release_mem(struct query_op &stop, struct query_temp &sttemp, int maxCard);
+void release_mem(struct query_op &stop, struct query_temp &sttemp);
 void obtain_field(struct query_op &stop, struct query_temp &sttemp, 
 	int position, int pos1, int pos2);
 void obtain_field(struct query_op &stop, struct query_temp &sttemp, 

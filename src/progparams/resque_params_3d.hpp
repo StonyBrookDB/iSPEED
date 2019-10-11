@@ -37,36 +37,8 @@
 #include <CGAL/AABB_triangle_primitive.h>
 
 #include <spatialindex/SpatialIndex.h>
-#include <progparams/string_constants.h>
 
-const int OSM_SRID = 4326;
-enum Jointype{
-	ST_ERROR = 0,
-	ST_INTERSECTS = 1,
-	ST_TOUCHES = 2,
-	ST_CROSSES = 3,
-	ST_CONTAINS = 4,
-	ST_ADJACENT = 5,
-	ST_DISJOINT = 6,
-	ST_EQUALS = 7,
-	ST_DWITHIN = 8,
-	ST_WITHIN = 9,
-	ST_OVERLAPS = 10,
-	ST_NEAREST = 11,
-	ST_NEAREST_2 = 12,
-	ST_NN_VORONOI = 13,
-	ST_NN_RTREE = 14
-};
-
-const std::string join_type_str[15] = {
-		"st_error", "st_intersects", "st_touches", "st_crosses", "st_contains"
-		"st_adjacent", "st_disjoint", "st_equals", "st_dwithin", "st_within",
-		"st_overlaps", "st_nearest", "st_nearest2", "st_nn_voronoi", "st_nn_rtree"};
-
-const int SID_1 = 1;
-const int SID_2 = 2;
-const int SID_NEUTRAL = 0;
-
+#include "global_define.h"
 
 /*
  * Struct to hold temporary values during spatial operations
@@ -88,7 +60,6 @@ struct query_temp {
 struct query_op {
 
 	Jointype join_predicate = ST_INTERSECTS; /* Join predicate*/
-	int join_cardinality = 2; /* Join cardinality, can only be 1 or 2*/
 	double expansion_distance = 0; /* Distance used in dwithin and k-nearest query */
 	int k_neighbors = 1; /* k - the number of neighbors used in k-nearest neighbor */
 

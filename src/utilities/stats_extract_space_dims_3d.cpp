@@ -5,8 +5,8 @@
 #include <cstdlib> 
 #include <getopt.h>
 #include <vector>
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
+#include "../progparams/global_define.h"
 
 using namespace std;
 

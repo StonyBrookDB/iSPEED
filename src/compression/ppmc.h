@@ -27,11 +27,11 @@
 #include <CGAL/Timer.h>
 
 /// RESQUE related
-#include <progparams/string_constants.h>
 #include <utilities/tokenizer.h>
 
 // Constants
 #include <progparams/resque_constants_3d.h>
+#include "../progparams/global_define.h"
 #include "../progparams/resque_params_3d.cpp"
 
 // Program parameters

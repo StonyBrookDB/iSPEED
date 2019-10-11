@@ -4,23 +4,6 @@
 namespace po = boost::program_options;
 using namespace std;
 
-
-char nametemplate[] = "/tmp/hadoopgisXXXXXX";
-char nametemplate2[] = "/tmp/hadoopgisnnXXXXXX";
-char nametemplate3[] = "/tmp/hadoopgispartiXXXXXX";
-char nametemplate4[] = "/tmp/hadoopgisrtreeXXXXXX";
-char nametemplate5[] = "/tmp/hadoopgisspaceXXXXXX";
-char nametemplate6[] = "/tmp/hadoopgiscompressXXXXXX";
-
-inline Operation get_operation(string type){
-	for(int i=0;i<4;i++){
-		if(strcmp(type.c_str(),operation_str[i].c_str())==0){
-			return (Operation)i;
-		}
-	}
-	return ERROR;
-}
-
 inline void remove_slash(string &str){
 	if (str.at(str.size() - 1) == '/') {
 		str = str.substr(0, str.size() - 1);
@@ -33,23 +16,27 @@ bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
 	try {
 		po::options_description desc("Options");
 		desc.add_options()
+			// common parameters
 			("help,h", "This help message")
 			("querytype,q", po::value<string>(&querytype), "Query type [ partition | compress | join]")
-			("bucket,k", po::value<long>(&fr_vars.bucket_size), "Fine-grain level tile size for spjoin")
+			("binpath",po::value<string>(&binpath), "path to the binary executables")
+			("outputpath,o", po::value<string>(&fr_vars.output_path), "Output path")
+			("overwrite", "Overwrite existing hdfs directories")
+			("numreducers,n", po::value<int>(&fr_vars.numreducers), "The number of reducers")
+
 			("input1,a", po::value<string>(&fr_vars.input_path_1), "HDFS file path to data set 1")
 			("input2,b", po::value<string>(&fr_vars.input_path_2), "HDFS file path to data set 2")
-			("outputpath,o", po::value<string>(&fr_vars.output_path), "Output path")
+			// partition
+			("samplingrate,s", po::value<double>(&fr_vars.sampling_rate), "Sampling rate (0, 1]")
+			("partitioner,t", po::value<string>(&fr_vars.partition_method), "Partitioning method ([fg_3d | ot_3d ]")
+			("bucket,k", po::value<long>(&fr_vars.bucket_size), "Fine-grain level tile size for spjoin")
 
+			// resque
+			("lod,l", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
 			("distance,d", po::value<double>(&fr_vars.distance), "Distance (used for certain predicates)")
 			("predicate,p", po::value<string>(&fr_vars.predicate), "Predicate for spatial join and nn queries "
 					"[ st_intersects | st_touches | st_crosses | st_contains | st_adjacent | st_disjoint "
 					"| st_equals | st_dwithin | st_within | st_overlaps | st_nn_voronoi | st_nn_rtree ] ")
-			("samplingrate,s", po::value<double>(&fr_vars.sampling_rate), "Sampling rate (0, 1]") 
-			("partitioner,t", po::value<string>(&fr_vars.partition_method), "Partitioning method ([fg_3d | ot_3d ]")
-			("overwrite", "Overwrite existing hdfs directories")
-			("numreducers,n", po::value<int>(&fr_vars.numreducers), "The number of reducers")
-			("lod,l", po::value<int>(&fr_vars.decomp_lod) , "Decompression LOD. (0, 100]. Default is 100.")
-			("binpath",po::value<string>(&binpath), "path to the binary executables")
 			("compressed_data_path",po::value<string>(&fr_vars.compressed_data_path), "path to the combined compressed spatial data")
 			;
 		po::variables_map vm;        
@@ -85,22 +72,20 @@ bool extract_params(int argc, char **argv, struct framework_vars &fr_vars) {
 		// some general constrains
 		switch(fr_vars.query_type){
 		case JOIN:
-		case COMPRESS:
-			if(fr_vars.query_type==JOIN&&!vm.count("predicate")){
+			if(!vm.count("predicate") || get_join_predicate(fr_vars.predicate.c_str())==ST_ERROR){
 				cerr << desc << endl;
-				cerr << "type of predict should be given"<<endl;
+				cerr << "type of predict should be set properly"<<endl;
 				return false;
 			}
-			if(!vm.count("input1")){
+			break;
+		case COMPRESS:
+			if(!vm.count("input1")||!vm.count("input2")){
 				cerr << desc << endl;
-				cerr << "path for input1 should be given"<<endl;
+				cerr << "path for input1 and input2 should be given"<<endl;
 				return false;
 			}
 			remove_slash(fr_vars.input_path_1);
-			if(vm.count("input2")){
-				fr_vars.join_cardinality = 2;
-				remove_slash(fr_vars.input_path_2);
-			}
+			remove_slash(fr_vars.input_path_2);
 			break;
 		case PARTITION:
 			// sample rate, bucket size, partitioner can be specified

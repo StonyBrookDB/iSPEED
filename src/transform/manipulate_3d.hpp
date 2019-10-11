@@ -15,7 +15,7 @@
 #include <spatialindex/SpatialIndex.h>
 
 #include <utilities/tokenizer.h>
-#include <progparams/string_constants.h>
+#include "../progparams/global_define.h"
 //#include <progparams/resque_params_3d.hpp>
 
 // Constants used for building the R-tree

@@ -20,4 +20,4 @@ queryprocessor_3d -q partition -o $root_folder/$output_folder --binpath ./ \
 
 #forthly: do the join
 queryprocessor_3d -q join -o $root_folder/$output_folder --binpath ./ \
-	-a $root_folder/$input_1 -b $root_folder/$input_2 --compressed_data_path /tmp/allbin -p $predicate_type
+	--compressed_data_path /tmp/allbin -p $predicate_type
