@@ -30,28 +30,33 @@ using namespace std;
  * by this instance will also be attached to the end of the binary file
  *
  * */
-
+const char *dummy_path = "/dummy/path";
 int main(int argc, char** argv) {
 
+	const char *prefix_2 = dummy_path;
 	if(argc<2){
+#ifndef DEBUG
 		//here we only take the prefix of output2 as the parameter
 		//for judging which dataset we are in
+		//we do not need this for debug mode
 		std::cerr<<"usage: ppmc /path/to/second/dataset"<<std::endl;
 		return 0;
+#endif
+	}else{
+		prefix_2 = argv[1];
 	}
 
 	/*firstly we need to get which data set are we processing*/
-	char *prefix_2 = argv[1];
-	int join_idx = -1; // index of the current file (0 or 1) matching to dataset 1 or 2
-	char* mapper_id = getenv("mapreduce_task_id");
-	char *stdin_file_name = getenv("mapreduce_map_input_file");// name of the input file
+	int join_idx = 1; // index of the current file (0 or 1) matching to dataset 1 or 2
+	const char *mapper_id = getenv("mapreduce_task_id");
+	const char *stdin_file_name = getenv("mapreduce_map_input_file");// name of the input file
 
 	/* This happens if program is not run in mapreduce
 	 *  For testing locally, set/export the environment variable above */
 	if (!stdin_file_name) {
 		#ifdef DEBUG
-		std::cerr << "Environment variable mapreduce_map_input_file is not set, use "<< argv[1] << std::endl;
-		stdin_file_name = argv[1];
+		std::cerr << "Environment variable mapreduce_map_input_file is not set, use "<< dummy_path << std::endl;
+		stdin_file_name = dummy_path;
 		#else
 		std::cerr << "Environment variable mapreduce_map_input_file is not set correctly." << std::endl;
 		return -1;
@@ -60,16 +65,14 @@ int main(int argc, char** argv) {
 	if(!mapper_id){
 		#ifdef DEBUG
 		std::cerr << "Environment variable mapreduce_task_id is not set use 0." << std::endl;
-		mapper_id = (char *)"0";
+		mapper_id = "0";
 		#else
 		std::cerr << "Environment variable mapreduce_task_id is not set correctly." << std::endl;
 		return -1;
 		#endif
 	}
-	#ifdef DEBUG
-	std::cerr <<"stdin file name: "<< stdin_file_name<<"\nmapper_id:" <<mapper_id<< std::endl;
-	#endif
 
+	std::cerr <<"stdin file name: "<< stdin_file_name<<"\nmapper_id:" <<mapper_id<< std::endl;
 	if (prefix_2!=NULL && strstr(stdin_file_name, prefix_2) != NULL) {
 		join_idx = SID_2;
 	} else {
@@ -95,7 +98,7 @@ int main(int argc, char** argv) {
 }
 
 
-bool compress_data( std::string output_path, char* mapper_id, long join_id){
+bool compress_data( std::string output_path, const char* mapper_id, long join_id){
 
 	MyMesh *currentMesh = NULL;
 	long obj_id = 0;
@@ -105,11 +108,12 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 	int i_mode = COMPRESSION_MODE_ID; // compression mode
 
 	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
+	bool optimization = false;
+	bool b_useAdaptiveQuantization = optimization;
+	bool b_useLiftingScheme = optimization;
+	bool b_useCurvaturePrediction = optimization;
+	bool b_useConnectivityPredictionFaces = optimization;
+	bool b_useConnectivityPredictionEdges = optimization;
 	bool b_allowConcaveFaces = true;
 	bool b_useTriangleMeshConnectivityPredictionFaces = true;
 	unsigned i_quantBit = 12;
@@ -144,9 +148,9 @@ bool compress_data( std::string output_path, char* mapper_id, long join_id){
 			// convert it back to a normal OFF format
 			boost::replace_all(input_line, BAR, "\n");
 			// Init the random number generator.
-			srand(4212);
 			//read the mesh:
 			//global variables
+			srand(PPMC_RANDOM_CONSTANT);
 			currentMesh = new MyMesh(i_decompPercentage,
 					     i_mode, i_quantBit, b_useAdaptiveQuantization,
 					     b_useLiftingScheme, b_useCurvaturePrediction,

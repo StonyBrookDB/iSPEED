@@ -1,4 +1,3 @@
 
-Theses headers and file contains the source code of RESQUE, the spatial processing engine.
+Theses headers and file contains the source code of RESQUE, the spatial processing engine. It supports judging intersections, computing distances etc. among mesh-based polyhedrons with support of indices (Rtree, AABB-tree, Skeleton&voronoi). 
 
-`resque_2d.cpp` contains the main function and `resque_2d.hpp` is the main header containing all dependent headers and functions.

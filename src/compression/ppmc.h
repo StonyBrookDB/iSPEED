@@ -30,14 +30,11 @@
 #include <utilities/tokenizer.h>
 
 // Constants
-#include <progparams/resque_constants_3d.h>
 #include "../progparams/global_define.h"
-#include "../progparams/resque_params_3d.cpp"
-
 // Program parameters
 #include "PPMC/mymesh.h"
 #include "PPMC/configuration.h"
 #define SHMSZ     10000000000
 
 
-bool compress_data(std::string output_path, char* mapper_id, long join_id);
+bool compress_data(std::string output_path, const char* mapper_id, long join_id);

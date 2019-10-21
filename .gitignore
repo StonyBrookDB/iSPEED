@@ -4,3 +4,4 @@
 *.o
 build/
 /Default/
+src/resque/test.cpp

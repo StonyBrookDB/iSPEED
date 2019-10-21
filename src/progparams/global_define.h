@@ -66,6 +66,8 @@ const int SID_2 = 2;
 const int SID_NEUTRAL = 0;
 const int OSM_SRID = 4326;
 
+const int PPMC_RANDOM_CONSTANT = 4212;
+
 const char nametemplate[] = "/tmp/hadoopgisXXXXXX";
 
 

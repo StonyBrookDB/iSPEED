@@ -1,7 +1,7 @@
 #!/bin/bash
 root_folder="/user/teng/test1"
-input_1="input1_tiny"
-input_2="input_vessel_tiny"
+input_1="input1"
+input_2="input_vessel_1"
 output_folder="output"
 predicate_type="st_nn_rtree"
 

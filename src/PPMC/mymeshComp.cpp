@@ -1001,7 +1001,7 @@ void MyMesh::encodeAdaptiveQuantization(std::deque<unsigned> &symbols)
     unsigned i_nbSymbols[8] = {0};
 
     unsigned i_len = symbols.size();
-    std::cout << "Nb vertices: " << i_len << std::endl;
+    //std::cout << "Nb vertices: " << i_len << std::endl;
     assert(i_len > 0);
     for (unsigned i = 0; i < i_len; ++i)
     {

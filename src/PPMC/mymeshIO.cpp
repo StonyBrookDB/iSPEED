@@ -475,6 +475,8 @@ void MyMesh::writeMeshOff(const char psz_filePath[]) const
     {
         std::ostream os(&fb);
         os << *this;
+    }else{
+    	std::cerr<<"cannot find path "<<psz_filePath<<std::endl;
     }
 }
 

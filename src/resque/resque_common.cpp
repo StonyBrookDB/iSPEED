@@ -93,18 +93,19 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 
 	// Initialize parameters
 	// Codec features status.
+	bool optimization = false;
 	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
+	bool b_useAdaptiveQuantization = optimization;
+	bool b_useLiftingScheme = optimization;
+	bool b_useCurvaturePrediction = optimization;
+	bool b_useConnectivityPredictionFaces = optimization;
+	bool b_useConnectivityPredictionEdges = optimization;
 	bool b_allowConcaveFaces = true;
 	bool b_useTriangleMeshConnectivityPredictionFaces = true;
 	unsigned i_quantBit = 12;
 
 	// Init the random number generator.
-	srand(4212);
+	srand(PPMC_RANDOM_CONSTANT);
 	// decompress the polyhedron from binary
 	MyMesh *currentMesh = new MyMesh(
 					 i_decompPercentage,
@@ -113,9 +114,6 @@ MyMesh *extract_mesh(long offset, long length, unsigned i_decompPercentage){
 					 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
 					 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
 					 (char*)(shm_ptr + offset), length);
-
-
-	assert(currentMesh!=NULL);
 	currentMesh->completeOperation();
 #ifdef DEBUG
 	std::cerr << "mesh decompressed" << std::endl;

@@ -4,141 +4,126 @@
  *  Created on: Sep 25, 2019
  *      Author: teng
  */
-#include <CGAL/Polyhedron_3.h>
-#include <CGAL/Polyhedron_items_with_id_3.h>
-#include <CGAL/Simple_cartesian.h>
-#include <CGAL/extract_mean_curvature_flow_skeleton.h>
-#include <CGAL/mesh_segmentation.h>
-#include <fstream>
-#include <PPMC/configuration.h>
-#include <PPMC/mymesh.h>
-#include <sys/shm.h>
-#include <iostream>
+#include "resque_3d.hpp"
 
-typedef CGAL::Simple_cartesian<double>                               Kernel;
-typedef Kernel::Point_3                                              CGAL_Point;
-typedef CGAL::Polyhedron_3<Kernel, CGAL::Polyhedron_items_with_id_3> Polyhedron;
-typedef boost::graph_traits<Polyhedron>::vertex_descriptor           vertex_descriptor;
-typedef boost::graph_traits<Polyhedron>::halfedge_descriptor         halfedge_descriptor;
-typedef boost::graph_traits<Polyhedron>::face_descriptor             face_descriptor;
-typedef CGAL::Mean_curvature_flow_skeletonization<Polyhedron>        Skeletonization;
-typedef Skeletonization::Skeleton                                    Skeleton;
-typedef Skeleton::vertex_descriptor                                  Skeleton_vertex;
-// Property map associating a facet with an integer as id to an
-// element in a vector stored internally
+#include <sys/time.h>
+struct timeval get_cur_time(){
+	struct timeval t1;
+	gettimeofday(&t1, NULL);
+	return t1;
+}
+double get_time_elapsed(struct timeval t1){
+	struct timeval t2;
+    double elapsedTime;
+	gettimeofday(&t2, NULL);
+	// compute and print the elapsed time in millisec
+	elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+	elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
+	return elapsedTime;
+}
+
+bool optimization = false;
 using namespace std;
+bool b_useAdaptiveQuantization = optimization;
+bool b_useLiftingScheme = optimization;
+bool b_useCurvaturePrediction = optimization;
+bool b_useConnectivityPredictionFaces = optimization;
+bool b_useConnectivityPredictionEdges = optimization;
+bool b_allowConcaveFaces = true;
+bool b_useTriangleMeshConnectivityPredictionFaces = true;
+unsigned i_quantBit = 12;
+unsigned i_decompPercentage = 100;
 
-template<class ValueType>
-struct Facet_with_id_pmap
-    : public boost::put_get_helper<ValueType&,
-             Facet_with_id_pmap<ValueType> >
-{
-    typedef face_descriptor key_type;
-    typedef ValueType value_type;
-    typedef value_type& reference;
-    typedef boost::lvalue_property_map_tag category;
-    Facet_with_id_pmap(
-      std::vector<ValueType>& internal_vector
-    ) : internal_vector(internal_vector) { }
-    reference operator[](key_type key) const
-    { return internal_vector[key->id()]; }
-private:
-    std::vector<ValueType>& internal_vector;
-};
+MyMesh *compress(string input){
+	int i_mode = COMPRESSION_MODE_ID; // compression mode
+
+	srand(PPMC_RANDOM_CONSTANT);
+	MyMesh *currentMesh = new MyMesh(i_decompPercentage,
+		 i_mode, i_quantBit, b_useAdaptiveQuantization,
+		 b_useLiftingScheme, b_useCurvaturePrediction,
+		 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+		 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+		 (char*)(input.c_str()), input.size());
+	currentMesh->completeOperation();
+	return currentMesh;
+}
+
+void print_mesh(MyMesh *mesh){
+	std::stringstream os;
+	os << *mesh;
+	cout << os.str()<<endl;
+}
+
+void print_mesh_file(MyMesh *mesh, char *path){
+	ofstream myfile;
+	myfile.open(path);
+	myfile << *mesh;
+	myfile.close();
+}
+
 int main()
 {
-	int shmid;
-	char * shm_ptr = NULL;
-	char *decomp_buffer =  new char[BUFFER_SIZE];
-
-	//use the same key to locate the segment.
-	// Getting access to shared memory with all compressed objects stored in there
-	if ((shmid = shmget(5678, 0, 0666)) < 0) {
-		perror("shmget");
-		exit(1);
+	string input_line;
+	MyMesh *compressed = NULL;
+	int index = 0;
+	long total = 0;
+	while(std::cin && getline(std::cin, input_line) && !std::cin.eof()){
+		struct timeval t1 = get_cur_time();
+		boost::replace_all(input_line, BAR, "\n");
+		compressed = compress(input_line);
+		total += compressed->dataOffset;
+		index += 10;
+		std::cerr<<"processed "<<index/10<<" "<<get_time_elapsed(t1)/1000<<endl;
+		break;
 	}
-	// Now we attach the segment to our data space.
-	if ((shm_ptr = (char *) shmat(shmid, (const void *)NULL, 0)) == (char *) -1) {
-		perror("shmat");
-		exit(1);
+	char path[100];
+	for(int i=0;i<=10;i++){
+		srand(PPMC_RANDOM_CONSTANT);
+		MyMesh *decompressed = new MyMesh(10*i,
+				DECOMPRESSION_MODE_ID, i_quantBit, b_useAdaptiveQuantization,
+						 b_useLiftingScheme, b_useCurvaturePrediction,
+						 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+						 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+						 compressed->p_data, compressed->dataOffset);
+		decompressed->completeOperation();
+		sprintf(path,"lod%d.off",i*10);
+		print_mesh_file(decompressed, path);
+
+		cerr<<index<<" "<<decompressed->dataOffset<<endl;
+		delete decompressed;
+
 	}
-	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
+//	int i_mode = DECOMPRESSION_MODE_ID; // compression mode
+//	for(int i = 1;i<=10;i++){
+//		int i_decompPercentage = 10*i;
+//		srand(PPMC_RANDOM_CONSTANT);
+//		MyMesh *decompressed = new MyMesh(i_decompPercentage,
+//						 i_mode, i_quantBit, b_useAdaptiveQuantization,
+//						 b_useLiftingScheme, b_useCurvaturePrediction,
+//						 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+//						 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+//						 compressed->p_data, compressed->dataOffset);
+//		decompressed->completeOperation();
+//		cerr<<10*i<<" "<<decompressed->dataOffset<<endl;
+//		delete decompressed;
+//	}
+//
+//	for(int i=10;i<=100;i+=10){
+//		struct timeval start = get_cur_time();
+//		//repeat 10 times for profiling decompression performance
+//		for(int r = 0;r<10;r++){
+//			MyMesh *decompressed = new MyMesh(i,
+//							 i_mode, i_quantBit, b_useAdaptiveQuantization,
+//							 b_useLiftingScheme, b_useCurvaturePrediction,
+//							 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
+//							 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
+//							 compressed->p_data, compressed->dataOffset);
+//			decompressed->completeOperation();
+//			delete decompressed;
+//		}
+//		cerr<<"decompression takes "<<get_time_elapsed(start)/10<<endl;
+//	}
+	delete compressed;
 
-
-	// Codec features status.
-	bool b_useAdaptiveQuantization = false;
-	bool b_useLiftingScheme = true;
-	bool b_useCurvaturePrediction = true;
-	bool b_useConnectivityPredictionFaces = true;
-	bool b_useConnectivityPredictionEdges = true;
-	bool b_allowConcaveFaces = true;
-	bool b_useTriangleMeshConnectivityPredictionFaces = true;
-	unsigned i_quantBit = 12;
-	//unsigned i_decompPercentage = 100;
-
-	// Init the random number generator.
-	srand(4212);
-	MyMesh *currentMesh = new MyMesh(100,
-					 i_mode, i_quantBit, b_useAdaptiveQuantization,
-					 b_useLiftingScheme, b_useCurvaturePrediction,
-					 b_useConnectivityPredictionFaces, b_useConnectivityPredictionEdges,
-					 b_allowConcaveFaces, b_useTriangleMeshConnectivityPredictionFaces,
-					 (char*)(shm_ptr), 16759, decomp_buffer);
-
-
-	assert(currentMesh!=NULL);
-	currentMesh->completeOperation();
-	Polyhedron geom;
-	std::stringstream os;
-	os << *currentMesh;
-	os >>geom;
-	cout << os.str();
-	if (!CGAL::is_triangle_mesh(geom))
-	{
-		std::cout << "Input geometry is not triangulated." << std::endl;
-		return EXIT_FAILURE;
-	}
-	std::cout<<"start extraction"<<std::endl;
-	// extract the skeleton
-	Skeleton skeleton;
-	try{
-		CGAL::extract_mean_curvature_flow_skeleton(geom, skeleton);
-	}catch(std::exception &exc){
-		std::cerr<<exc.what()<<std::endl;
-	}
-	std::cout<<"extracted"<<std::endl;
-
-	// init the polyhedron simplex indices
-	CGAL::set_halfedgeds_items_id(geom);
-	//for each input vertex compute its distance to the skeleton
-	std::vector<double> distances(num_vertices(geom));
-	BOOST_FOREACH(Skeleton_vertex v, vertices(skeleton) )
-	{
-		const CGAL_Point& skel_pt = skeleton[v].point;
-		BOOST_FOREACH(vertex_descriptor mesh_v, skeleton[v].vertices)
-		{
-				const CGAL_Point& mesh_pt = mesh_v->point();
-					distances[mesh_v->id()] = std::sqrt(CGAL::squared_distance(skel_pt, mesh_pt));
-		}
-	}
-	// create a property-map for sdf values
-	std::vector<double> sdf_values( num_faces(geom) );
-	Facet_with_id_pmap<double> sdf_property_map(sdf_values);
-	// compute sdf values with skeleton
-	BOOST_FOREACH(face_descriptor f, faces(geom))
-	{
-		double dist = 0;
-		BOOST_FOREACH(halfedge_descriptor hd, halfedges_around_face(halfedge(f, geom), geom))
-			dist+=distances[target(hd, geom)->id()];
-		sdf_property_map[f] = dist / 3.;
-	}
-	// post-process the sdf values
-	CGAL::sdf_values_postprocessing(geom, sdf_property_map);
-	// create a property-map for segment-ids (it is an adaptor for this case)
-	std::vector<std::size_t> segment_ids( num_faces(geom) );
-	Facet_with_id_pmap<std::size_t> segment_property_map(segment_ids);
-	// segment the mesh using default parameters
-	std::cout << "Number of segments: "
-		<< CGAL::segmentation_from_sdf_values(geom, sdf_property_map, segment_property_map) <<"\n";
-  return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

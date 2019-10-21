@@ -68,14 +68,14 @@ MyMesh::MyMesh(unsigned i_decompPercentage,
 	    is.str(data);
         is >> *this;
 		if (keep_largest_connected_components(1) != 0){
-			std::cout << "Can't compress the mesh." << std::endl;
-			std::cout << "The codec doesn't handle meshes with several connected components." << std::endl;
+			std::cerr << "Can't compress the mesh." << std::endl;
+			std::cerr << "The codec doesn't handle meshes with several connected components." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
 		if (!is_closed()){
-			std::cout << "Can't compress the mesh." << std::endl;
-			std::cout << "The codec doesn't handle meshes with borders." << std::endl;
+			std::cerr << "Can't compress the mesh." << std::endl;
+			std::cerr << "The codec doesn't handle meshes with borders." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -129,43 +129,43 @@ MyMesh::~MyMesh(){
 /**
   * Perform one step of the current operation.
   */
-void MyMesh::stepOperation()
-{
-    if (b_jobCompleted)
-        return;
-    switch (operation)
-    {
-    case Idle:
-        if (i_mode == COMPRESSION_MODE_ID)
-            startNextCompresssionOp();
-        else
-            startNextDecompresssionOp();
-        break;
-    case DecimationConquest:
-        decimationStep();
-        break;
-    case RemovedVertexCoding:
-        RemovedVertexCodingStep();
-        break;
-    case InsertedEdgeCoding:
-        InsertedEdgeCodingStep();
-        break;
-    case AdaptiveQuantization:
-        adaptiveQuantizationStep();
-        break;
-    case UndecimationConquest:
-        undecimationStep();
-        break;
-    case InsertedEdgeDecoding:
-        InsertedEdgeDecodingStep();
-        break;
-    case AdaptiveUnquantization:
-        adaptiveUnquantizationStep();
-        break;
-    default:
-        break;
-    }
-}
+//void MyMesh::stepOperation()
+//{
+//    if (b_jobCompleted)
+//        return;
+//    switch (operation)
+//    {
+//    case Idle:
+//        if (i_mode == COMPRESSION_MODE_ID)
+//            startNextCompresssionOp();
+//        else
+//            startNextDecompresssionOp();
+//        break;
+//    case DecimationConquest:
+//        decimationStep();
+//        break;
+//    case RemovedVertexCoding:
+//        RemovedVertexCodingStep();
+//        break;
+//    case InsertedEdgeCoding:
+//        InsertedEdgeCodingStep();
+//        break;
+//    case AdaptiveQuantization:
+//        adaptiveQuantizationStep();
+//        break;
+//    case UndecimationConquest:
+//        undecimationStep();
+//        break;
+//    case InsertedEdgeDecoding:
+//        InsertedEdgeDecodingStep();
+//        break;
+//    case AdaptiveUnquantization:
+//        adaptiveUnquantizationStep();
+//        break;
+//    default:
+//        break;
+//    }
+//}
 
 
 /**
