@@ -1,5 +1,8 @@
 # iSPEED
 
+## Further documentation:
+http://bmidb.cs.stonybrook.edu/ispeed/index
+
 You can try ispeed easily using docker. refer to https://www.docker.com/ for more information about install and use of docker container.
 
 ## Build docker images
@@ -56,3 +59,8 @@ It will run a shell which you can run tests. Then you can run tests with command
 ```
 sh runtest.sh
 ```
+
+## References:
+[1] Yanhui Liang, Hoang Vo, Jun Kong and Fusheng Wang: [iSPEED: an Efficient In-Memory Based Spatial Query System for Large-Scale 3D Data with Complex Structures](https://dl.acm.org/doi/10.1145/3139958.3139961). In Proceedings of SIGSPATIAL 2017. November 7 - 10, 2017, Redondo Beach, California, USA.
+
+[2] Yanhui Liang, Hoang Vo, Jun Kong and Fusheng Wang: [iSPEED: a Scalable and Distributed In-Memory Based Spatial Query System for Large and Structurally Complex 3D Data](http://www.vldb.org/pvldb/vol11/p2078-vo.pdf). Demo Paper. In Proceedings of the 44th International Conference on Very Large Data Bases (VLDB 2018), August 27-31, 2018, Rio de Janeiro, Brazil.
