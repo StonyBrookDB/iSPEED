@@ -64,3 +64,5 @@ sh runtest.sh
 [1] Yanhui Liang, Hoang Vo, Jun Kong and Fusheng Wang: [iSPEED: an Efficient In-Memory Based Spatial Query System for Large-Scale 3D Data with Complex Structures](https://dl.acm.org/doi/10.1145/3139958.3139961). In Proceedings of SIGSPATIAL 2017. November 7 - 10, 2017, Redondo Beach, California, USA.
 
 [2] Yanhui Liang, Hoang Vo, Jun Kong and Fusheng Wang: [iSPEED: a Scalable and Distributed In-Memory Based Spatial Query System for Large and Structurally Complex 3D Data](http://www.vldb.org/pvldb/vol11/p2078-vo.pdf). Demo Paper. In Proceedings of the 44th International Conference on Very Large Data Bases (VLDB 2018), August 27-31, 2018, Rio de Janeiro, Brazil.
+
+[3] Dejun Teng, Yanhui Liang, Hoang Vo, Jun Kong, and Fusheng Wang. [Efficient 3D Spatial Queries for Complex Objects](https://dl.acm.org/doi/abs/10.1145/3502221). ACM Transactions on Spatial Algorithms and Systems (TSAS) 8, no. 2 (2022): 1-26.
